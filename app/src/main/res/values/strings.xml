@@ -155,6 +155,7 @@
     <string name="snackbar_authentication_method">Please select an authentication method</string>
     <string name="linking_browser">Linking browser</string>
     <string name="linking_browser_error">Linking browser failed</string>
+    <string name="browser_link_approve_description">Approve request for</string>
     <string name="encrypting_vault">Encrypting the vault</string>
     <string name="exporting_vault">Exporting the vault</string>
     <string name="reading_file">Reading file</string>

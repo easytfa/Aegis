@@ -1,10 +1,13 @@
 package com.beemdevelopment.aegis.vault;
 
+import com.beemdevelopment.aegis.encoding.Hex;
 import com.beemdevelopment.aegis.util.UUIDMap;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.UUID;
 
 public class VaultLinkedBrowserEntry extends UUIDMap.Value {
@@ -57,6 +60,13 @@ public class VaultLinkedBrowserEntry extends UUIDMap.Value {
         }
     }
 
+    public String getBrowserPublicKeyHash() {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return Hex.encode(digest.digest(_browserPublicKey.getBytes(StandardCharsets.UTF_8)));
+        } catch(Exception ex) {}
+        return "";
+    }
     public String getBrowserName() {
         return _browserName;
     }

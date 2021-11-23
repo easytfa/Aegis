@@ -1,6 +1,7 @@
 package com.beemdevelopment.aegis.ui.linked;
 
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.widget.Toast;
@@ -30,6 +31,7 @@ public class LinkedBrowsersActivity extends AegisActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_linked_browsers);
         setSupportActionBar(findViewById(R.id.toolbar));

@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.Menu;
@@ -615,6 +616,10 @@ public class MainActivity extends AegisActivity implements EntryListView.Listene
             }
             case R.id.action_linked_browsers: {
                 startLinkedBrowsersActivity();
+                return true;
+            }
+            case R.id.action_refresh_linked_browsers: {
+                AsyncTask.execute(() -> getApp().getBrowserLinkManager().checkForNewRequest());
                 return true;
             }
             case R.id.action_about: {

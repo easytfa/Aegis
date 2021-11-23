@@ -10,9 +10,11 @@ import com.beemdevelopment.aegis.otp.TotpInfo;
 import com.beemdevelopment.aegis.util.JsonUtils;
 import com.beemdevelopment.aegis.util.UUIDMap;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.UUID;
@@ -28,6 +30,7 @@ public class VaultEntry extends UUIDMap.Value {
     private IconType _iconType = IconType.INVALID;
     private int _usageCount;
     private String _note = "";
+    private ArrayList<String> _browserLinkUrls = new ArrayList<>();
 
     private VaultEntry(UUID uuid, OtpInfo info) {
         super(uuid);
@@ -69,6 +72,9 @@ public class VaultEntry extends UUIDMap.Value {
             obj.put("icon", _icon == null ? JSONObject.NULL : Base64.encode(_icon));
             obj.put("icon_mime", _icon == null ? null : _iconType.toMimeType());
             obj.put("info", _info.toJson());
+
+            JSONArray browserLinkUrls = new JSONArray(_browserLinkUrls);
+            obj.put("browserLinkUrls", browserLinkUrls);
         } catch (JSONException e) {
             throw new RuntimeException(e);
         }
@@ -106,6 +112,13 @@ public class VaultEntry extends UUIDMap.Value {
                 entry.setIcon(iconBytes, iconType);
             }
 
+            if(obj.has("browserLinkUrls")) {
+                JSONArray urls = obj.getJSONArray("browserLinkUrls");
+                for(int i = 0; i < urls.length(); i++ ) {
+                    entry._browserLinkUrls.add(urls.getString(i));
+                }
+            }
+
             return entry;
         } catch (OtpInfoException | JSONException | EncodingException e) {
             throw new VaultEntryException(e);
@@ -141,6 +154,8 @@ public class VaultEntry extends UUIDMap.Value {
     }
 
     public String getNote() { return _note; }
+
+    public ArrayList<String> getBrowserLinkUrls() { return _browserLinkUrls; }
 
     public void setName(String name) {
         _name = name;
