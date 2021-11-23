@@ -79,6 +79,10 @@
             android:name=".ui.linked.LinkedBrowsersActivity"
             android:label="@string/title_activity_linked_browsers" />
         <activity
+            android:name=".ui.linked.LinkedBrowserApproveRequestActivity"
+            android:label="@string/title_activity_linked_approve" />
+
+        <activity
             android:name=".ui.SlotManagerActivity"
             android:label="@string/title_activity_manage_slots" />
         <activity

@@ -376,6 +376,7 @@
 
     <string name="title_activity_preferences">Settings</string>
     <string name="title_activity_linked_browsers">Linked Browsers</string>
+    <string name="title_activity_linked_approve">Approve Request</string>
     <string name="title_activity_manage_groups">Manage groups</string>
     <string name="title_activity_transfer">Transfer entries</string>
     <string name="title_activity_about">About</string>

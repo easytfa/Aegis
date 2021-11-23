@@ -56,7 +56,7 @@ public class LinkedBrowserApproveRequestActivity extends AegisActivity {
             imageView.setImageDrawable(drawable);
         }
 
-        TextView textView = findViewById(R.id.profile_account_name);
+        TextView textView = findViewById(R.id.profile_issuer);
         textView.setText(entry.getIssuer());
 
         Button approveButton = findViewById(R.id.approveButton);

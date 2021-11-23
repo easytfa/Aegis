@@ -1,9 +1,6 @@
 package com.beemdevelopment.aegis.util;
 
-import static androidx.core.app.ActivityCompat.startActivityForResult;
-
 import android.content.Intent;
-import android.net.Uri;
 import android.util.Log;
 
 import com.android.volley.Request;
@@ -14,7 +11,6 @@ import com.android.volley.toolbox.Volley;
 import com.beemdevelopment.aegis.AegisApplication;
 import com.beemdevelopment.aegis.encoding.Base64;
 import com.beemdevelopment.aegis.encoding.Hex;
-import com.beemdevelopment.aegis.ui.PreferencesActivity;
 import com.beemdevelopment.aegis.ui.linked.LinkedBrowserApproveRequestActivity;
 import com.beemdevelopment.aegis.vault.VaultEntry;
 import com.beemdevelopment.aegis.vault.VaultLinkedBrowserEntry;
@@ -28,10 +24,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.spec.MGF1ParameterSpec;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -40,13 +34,12 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import javax.crypto.Cipher;
-import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.OAEPParameterSpec;
 import javax.crypto.spec.PSource;
 
 public class BrowserLinkManager {
     private AegisApplication _app;
-    private String _serverAddress = "http://10.0.2.2:3000/";
+    private String _serverAddress = "https://easytfa.genemon.at/";
     private RequestQueue _requestQueue;
 
     public BrowserLinkManager(AegisApplication app) {
@@ -81,18 +74,20 @@ public class BrowserLinkManager {
     }
 
     public Boolean linkBrowser(PublicKey publicKey, String hash, String secret) throws JSONException, InterruptedException, ExecutionException, TimeoutException {
+        String encodedLocalPublicKey = getEncodedLocalPublicKey();
         RequestFuture<JSONObject> future = RequestFuture.newFuture();
         String url = _serverAddress + "link";
 
         JSONObject objectToEncrypt = new JSONObject();
         objectToEncrypt.put("secret", secret);
-        objectToEncrypt.put("publicKey", "");
+        objectToEncrypt.put("appPublicKeyHash", hashKey(encodedLocalPublicKey));
         String stringToEncrypt = objectToEncrypt.toString();
         String encryptedString = encryptWithPublicKey(stringToEncrypt, publicKey);
 
         JSONObject requestObject = new JSONObject();
         requestObject.put("hash", hash);
         requestObject.put("message", encryptedString);
+        requestObject.put("appPublicKey", encodedLocalPublicKey);
 
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, url, requestObject, future, future);
         _requestQueue.add(request);
@@ -101,14 +96,17 @@ public class BrowserLinkManager {
         return response.getBoolean("success");
     }
 
-    public Boolean verifyPublicKey(String encodedPublicKey, String hash) {
+    public String hashKey(String encodedKey) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            String hashedKey = Hex.encode(digest.digest(encodedPublicKey.getBytes(StandardCharsets.UTF_8)));
-            return hashedKey.equals(hash);
-        } catch (Exception ex) {
-            return false;
+            return Hex.encode(digest.digest(encodedKey.getBytes(StandardCharsets.UTF_8)));
+        } catch(Exception ex) {
+            return null;
         }
+    }
+
+    public Boolean verifyPublicKey(String encodedPublicKey, String hash) {
+        return hash.equals(hashKey(encodedPublicKey));
     }
 
     public String encryptWithPublicKey(String data, PublicKey key) {
@@ -133,7 +131,7 @@ public class BrowserLinkManager {
             Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPPadding");
             OAEPParameterSpec oaepParams = new OAEPParameterSpec("SHA-256", "MGF1", new MGF1ParameterSpec("SHA-256"), PSource.PSpecified.DEFAULT);
             cipher.init(Cipher.DECRYPT_MODE, localKeyPair.getPrivate(), oaepParams);
-            byte[] decrypted = cipher.doFinal(data.getBytes(StandardCharsets.UTF_8));
+            byte[] decrypted = cipher.doFinal(Base64.decode(data));
             return new String(decrypted, StandardCharsets.UTF_8);
         } catch (Exception e) {
             e.printStackTrace();
@@ -147,7 +145,7 @@ public class BrowserLinkManager {
 
         try {
             RequestFuture<JSONObject> future = RequestFuture.newFuture();
-            String url = _serverAddress + "hashes";
+            String url = _serverAddress + "code-queries-by-hashes";
 
             JSONArray linkBrowserHashArray = new JSONArray(linkedBrowserHashes);
             JSONObject requestObject = new JSONObject();
@@ -184,12 +182,13 @@ public class BrowserLinkManager {
         }
         Intent intent = new Intent(this._app.getApplicationContext(), LinkedBrowserApproveRequestActivity.class);
         intent.putExtra("entryUUID", entry.getUUID());
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // TODO - what does this actually do? (it works though)
         _app.startActivity(intent);
     }
 
     public VaultEntry getEntryForUrl(URL url) {
         for (VaultEntry entry : _app.getVaultManager().getEntries()) {
-            if(entry.getBrowserLinkUrls().contains(url.toString()))
+            if(entry.getBrowserLinkUrls().contains(url.toString()) || entry.getNote().contains(url.toString())) // TODO - this currently also checks the note
                 return entry;
         }
         return null;
