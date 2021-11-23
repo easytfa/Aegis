@@ -13,6 +13,7 @@
         android:layout_height="match_parent">
 
         <LinearLayout
+            android:id="@+id/linearLayout3"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical"
@@ -44,44 +45,79 @@
                 android:maxLines="1"
                 android:text="@string/issuer"
                 android:textAlignment="center"
-                android:textColor="?attr/primaryText"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:textColor="@color/primary_text"
+                android:textSize="20dp" />
         </LinearLayout>
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintBottom_toTopOf="@+id/linearLayout"
+            app:layout_constraintTop_toBottomOf="@+id/linearLayout3"
+            android:padding="40dp">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:layout_anchor="@+id/constraintLayout"
-        app:layout_anchorGravity="center">
+            <TextView
+                android:id="@+id/profile_code"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-light"
+                android:includeFontPadding="false"
+                android:layoutDirection="ltr"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:textColor="@color/code_primary_text"
+                android:textAlignment="center"
+                android:textSize="34sp"
+                android:textStyle="normal|bold"
+                tools:text="012 345" />
+
+            <com.beemdevelopment.aegis.ui.views.TotpProgressBar
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="4dp"
+                android:id="@+id/progressBar"
+                android:max="5000"
+                android:layout_weight="1"/>
+        </LinearLayout>
 
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:id="@+id/linearLayout"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:paddingBottom="100dp"
+            android:padding="20dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            >
+            app:layout_constraintStart_toStartOf="parent">
 
             <Button
-                android:layout_width="wrap_content"
+                android:id="@+id/denyButton"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginRight="5dp"
+                android:layout_weight="1"
                 android:width="120dp"
                 android:text="Deny"
-                android:layout_marginRight="10dp"
-                android:id="@+id/denyButton"
-                android:backgroundTint="@color/colorAccentPressed"></Button>
+                android:textColor="@color/button_deny"
+                app:icon="@drawable/ic_close"
+                app:iconTint="@color/button_deny"
+                app:strokeColor="@color/button_deny"></Button>
 
             <Button
-                android:layout_width="wrap_content"
+                android:id="@+id/approveButton"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginLeft="5dp"
+                android:layout_weight="1"
                 android:width="120dp"
                 android:text="Approve"
-                android:id="@+id/approveButton"></Button>
+                android:textColor="@color/button_approve"
+                app:icon="@drawable/ic_check_black_24dp"
+                app:iconTint="@color/button_approve"
+                app:strokeColor="@color/button_approve"></Button>
+
         </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>

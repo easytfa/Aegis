@@ -27,6 +27,9 @@
     <color name="icon_primary_dark">#ffffff</color>
     <color name="icon_primary_dark_inverted">#212121</color>
 
+    <color name="button_approve">#4CAF50</color>
+    <color name="button_deny">#D32F2F</color>
+
     <color name="indicator_dot">#aaaaaa</color>
     <color name="indicator_dot_selected">#4c4c4c</color>
     <color name="indicator_dot_dark">#656565</color>

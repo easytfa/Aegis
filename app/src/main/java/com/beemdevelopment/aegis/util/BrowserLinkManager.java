@@ -21,11 +21,13 @@ import org.json.JSONObject;
 
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
 import java.security.PublicKey;
 import java.security.spec.MGF1ParameterSpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -162,11 +164,12 @@ public class BrowserLinkManager {
             String decryptedMessage = decryptWithPrivateKey(encryptedMessage);
             JSONObject messageJson = new JSONObject(decryptedMessage);
             String action = messageJson.getString("action");
-
+            String browserPubKeyHash = messageJson.getString("hash");
             switch (action) {
                 case "query-code":
                     String queryUrl = messageJson.getString("url");
-                    handleCodeRequest(new URL(queryUrl));
+
+                    handleCodeRequest(new URL(queryUrl), browserPubKeyHash);
                     break;
             }
 
@@ -175,13 +178,15 @@ public class BrowserLinkManager {
         }
     }
 
-    public void handleCodeRequest(URL url) {
+    public void handleCodeRequest(URL url, String browserPubKeyHash) {
         VaultEntry entry = getEntryForUrl(url);
         if(entry == null) {
             // TODO: Show entry selection dialog
         }
         Intent intent = new Intent(this._app.getApplicationContext(), LinkedBrowserApproveRequestActivity.class);
         intent.putExtra("entryUUID", entry.getUUID());
+        intent.putExtra("url", url.toString());
+        intent.putExtra("browserPubKeyHash", browserPubKeyHash);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // TODO - what does this actually do? (it works though)
         _app.startActivity(intent);
     }
@@ -192,5 +197,38 @@ public class BrowserLinkManager {
                 return entry;
         }
         return null;
+    }
+
+    public VaultLinkedBrowserEntry getEntryByPubKeyHash(String hash) {
+        for(VaultLinkedBrowserEntry entry: _app.getVaultManager().getLinkedBrowsers()) {
+            if(entry.getBrowserPublicKeyHash().equals(hash))
+                return entry;
+        }
+        return null;
+    }
+
+    public void sendCode(VaultLinkedBrowserEntry entry, String totpUrl, String code) {
+        try {
+            RequestFuture<JSONObject> future = RequestFuture.newFuture();
+            String url = _serverAddress + "send-code";
+
+            byte[] publicKeyData = Base64.decode(entry.getBrowserPublicKey());
+            X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(publicKeyData);
+            PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(publicKeySpec);
+
+            JSONObject browserMessage = new JSONObject();
+            browserMessage.put("url", totpUrl);
+            browserMessage.put("code", code);
+            String encryptedMessage = encryptWithPublicKey(browserMessage.toString(), publicKey);
+
+            JSONObject requestObject = new JSONObject();
+            requestObject.put("hash", entry.getBrowserPublicKeyHash());
+            requestObject.put("message", encryptedMessage);
+
+            JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, url, requestObject, future, future);
+            _requestQueue.add(request);
+        } catch (Exception ex) {
+            Log.e("BrowserLink", "Something failed", ex);
+        }
     }
 }

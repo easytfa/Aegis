@@ -2,35 +2,37 @@ package com.beemdevelopment.aegis.ui.linked;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
-
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.amulyakhare.textdrawable.TextDrawable;
 import com.beemdevelopment.aegis.R;
 import com.beemdevelopment.aegis.helpers.IconViewHelper;
 import com.beemdevelopment.aegis.helpers.TextDrawableHelper;
+import com.beemdevelopment.aegis.helpers.UiRefresher;
+import com.beemdevelopment.aegis.otp.OtpInfo;
+import com.beemdevelopment.aegis.otp.SteamInfo;
+import com.beemdevelopment.aegis.otp.TotpInfo;
 import com.beemdevelopment.aegis.ui.AegisActivity;
-import com.beemdevelopment.aegis.ui.ScannerActivity;
-import com.beemdevelopment.aegis.ui.dialogs.Dialogs;
 import com.beemdevelopment.aegis.ui.glide.IconLoader;
-import com.beemdevelopment.aegis.ui.tasks.LinkBrowserTask;
+import com.beemdevelopment.aegis.ui.views.TotpProgressBar;
 import com.beemdevelopment.aegis.vault.VaultEntry;
 import com.beemdevelopment.aegis.vault.VaultLinkedBrowserEntry;
-import com.beemdevelopment.aegis.vault.VaultManagerException;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
-import java.util.ArrayList;
 import java.util.UUID;
 
 public class LinkedBrowserApproveRequestActivity extends AegisActivity {
+
+    private UiRefresher _refresher;
+    private TotpProgressBar _progressBar;
+    private TextView _issuerTextView;
+    private TextView _profileCode;
+    private VaultEntry _entry;
+    private int _codeGroupSize = 3;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,28 +41,38 @@ public class LinkedBrowserApproveRequestActivity extends AegisActivity {
 
         Intent intent = getIntent();
         UUID entryUUID = (UUID) intent.getSerializableExtra("entryUUID");
-        VaultEntry entry = getApp().getVaultManager().getEntryByUUID(entryUUID);
+        String browserPubKeyHash = intent.getStringExtra("browserPubKeyHash");
+        String url = intent.getStringExtra("url");
+
+        _entry = getApp().getVaultManager().getEntryByUUID(entryUUID);
 
         ImageView imageView = findViewById(R.id.profile_icon);
-        if (entry.hasIcon()) {
-            IconViewHelper.setLayerType(imageView, entry.getIconType());
+        if (_entry.hasIcon()) {
+            IconViewHelper.setLayerType(imageView, _entry.getIconType());
             Glide.with(this)
                     .asDrawable()
-                    .load(entry)
-                    .set(IconLoader.ICON_TYPE, entry.getIconType())
+                    .load(_entry)
+                    .set(IconLoader.ICON_TYPE, _entry.getIconType())
                     .diskCacheStrategy(DiskCacheStrategy.NONE)
                     .skipMemoryCache(false)
                     .into(imageView);
         } else {
-            TextDrawable drawable = TextDrawableHelper.generate(entry.getIssuer(), entry.getName(), imageView);
+            TextDrawable drawable = TextDrawableHelper.generate(_entry.getIssuer(), _entry.getName(), imageView);
             imageView.setImageDrawable(drawable);
         }
 
-        TextView textView = findViewById(R.id.profile_issuer);
-        textView.setText(entry.getIssuer());
+        _progressBar = findViewById(R.id.progressBar);
+
+        _profileCode = findViewById(R.id.profile_code);
+        _issuerTextView = findViewById(R.id.profile_issuer);
+        _issuerTextView.setText(_entry.getIssuer());
 
         Button approveButton = findViewById(R.id.approveButton);
         approveButton.setOnClickListener(l -> {
+
+            VaultLinkedBrowserEntry linkedBrowserEntry = getApp().getBrowserLinkManager().getEntryByPubKeyHash(browserPubKeyHash);
+            getApp().getBrowserLinkManager().sendCode(linkedBrowserEntry, url, _entry.getInfo().getOtp());
+
             setApproval(true);
         });
 
@@ -68,6 +80,59 @@ public class LinkedBrowserApproveRequestActivity extends AegisActivity {
         denyButton.setOnClickListener(l -> {
             setApproval(false);
         });
+
+        _refresher = new UiRefresher(new UiRefresher.Listener() {
+            @Override
+            public void onRefresh() {
+                updateCode();
+            }
+
+            @Override
+            public long getMillisTillNextRefresh() {
+                return ((TotpInfo) _entry.getInfo()).getMillisTillNextRotation();
+            }
+        });
+
+        startRefreshLoop();
+    }
+
+    public void refresh() {
+        _progressBar.restart();
+        updateCode();
+    }
+
+    private void updateCode() {
+        OtpInfo info = _entry.getInfo();
+
+        String otp = info.getOtp();
+        if (!(info instanceof SteamInfo)) {
+            otp = formatCode(otp);
+        }
+
+        _profileCode.setText(otp);
+    }
+
+    private String formatCode(String code) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < code.length(); i++) {
+            if (i != 0 && i % _codeGroupSize == 0) {
+                sb.append(" ");
+            }
+            sb.append(code.charAt(i));
+        }
+        code = sb.toString();
+
+        return code;
+    }
+
+    public void startRefreshLoop() {
+        _refresher.start();
+        _progressBar.start();
+    }
+
+    public void stopRefreshLoop() {
+        _refresher.stop();
+        _progressBar.stop();
     }
 
     private void setApproval(boolean approval) {

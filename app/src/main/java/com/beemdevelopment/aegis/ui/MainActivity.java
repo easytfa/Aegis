@@ -528,6 +528,7 @@ public class MainActivity extends AegisActivity implements EntryListView.Listene
         updateLockIcon();
         doShortcutActions();
         updateBackupErrorBar();
+        AsyncTask.execute(() -> getApp().getBrowserLinkManager().checkForNewRequest());
     }
 
     @Override
