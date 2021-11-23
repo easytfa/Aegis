@@ -35,6 +35,7 @@ import com.beemdevelopment.aegis.otp.GoogleAuthInfoException;
 import com.beemdevelopment.aegis.ui.dialogs.Dialogs;
 import com.beemdevelopment.aegis.ui.fragments.BackupsPreferencesFragment;
 import com.beemdevelopment.aegis.ui.fragments.PreferencesFragment;
+import com.beemdevelopment.aegis.ui.linked.LinkedBrowsersActivity;
 import com.beemdevelopment.aegis.ui.views.EntryListView;
 import com.beemdevelopment.aegis.vault.VaultEntry;
 import com.beemdevelopment.aegis.vault.VaultFile;
@@ -69,6 +70,7 @@ public class MainActivity extends AegisActivity implements EntryListView.Listene
     private static final int CODE_DECRYPT = 4;
     private static final int CODE_PREFERENCES = 5;
     private static final int CODE_SCAN_IMAGE = 6;
+    private static final int CODE_LINKED_BROWSERS = 7;
 
     // permission request codes
     private static final int CODE_PERM_CAMERA = 0;
@@ -410,6 +412,11 @@ public class MainActivity extends AegisActivity implements EntryListView.Listene
         startActivityForResult(intent, CODE_PREFERENCES);
     }
 
+    private void startLinkedBrowsersActivity() {
+        Intent intent = new Intent(this, LinkedBrowsersActivity.class);
+        startActivityForResult(intent, CODE_LINKED_BROWSERS);
+    }
+
     private void doShortcutActions() {
         Intent intent = getIntent();
         String action = intent.getStringExtra("action");
@@ -604,6 +611,10 @@ public class MainActivity extends AegisActivity implements EntryListView.Listene
         switch (item.getItemId()) {
             case R.id.action_settings: {
                 startPreferencesActivity();
+                return true;
+            }
+            case R.id.action_linked_browsers: {
+                startLinkedBrowsersActivity();
                 return true;
             }
             case R.id.action_about: {

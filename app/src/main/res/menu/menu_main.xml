@@ -49,6 +49,11 @@
         android:title="@string/action_settings"
         app:showAsAction="never" />
     <item
+        android:id="@+id/action_linked_browsers"
+        android:orderInCategory="100"
+        android:title="@string/action_linked_browsers"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/action_about"
         android:orderInCategory="110"
         android:title="@string/action_about"

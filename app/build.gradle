@@ -168,6 +168,7 @@ dependencies {
     implementation 'net.lingala.zip4j:zip4j:2.6.0'
     implementation 'info.guardianproject.trustedintents:trustedintents:0.2'
     implementation 'org.bouncycastle:bcprov-jdk15on:1.69'
+    implementation 'com.android.volley:volley:1.2.1'
 
     androidTestImplementation "androidx.test:core:${androidTestVersion}"
     androidTestImplementation "androidx.test:runner:${androidTestVersion}"
