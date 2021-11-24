@@ -518,9 +518,11 @@ public class MainActivity extends AegisActivity implements EntryListView.Listene
 
             // refresh all codes to prevent showing old ones
             _entryListView.refresh(false);
+            AsyncTask.execute(() -> getApp().getBrowserLinkManager().checkForNewRequest());
         } else {
             loadEntries();
             checkTimeSyncSetting();
+            AsyncTask.execute(() -> getApp().getBrowserLinkManager().checkForNewRequest());
         }
 
         handleDeeplink();
@@ -528,7 +530,6 @@ public class MainActivity extends AegisActivity implements EntryListView.Listene
         updateLockIcon();
         doShortcutActions();
         updateBackupErrorBar();
-        AsyncTask.execute(() -> getApp().getBrowserLinkManager().checkForNewRequest());
     }
 
     @Override
