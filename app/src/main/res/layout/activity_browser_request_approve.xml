@@ -12,29 +12,35 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <LinearLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/linearLayout3"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
             android:paddingTop="100dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
             <TextView
-                android:layout_width="match_parent"
+                android:id="@+id/textView4"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/browser_link_approve_description"
                 android:textAlignment="center"
-                android:textSize="25dp"></TextView>
+                android:textSize="25dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"></TextView>
 
             <ImageView
                 android:id="@+id/profile_icon"
-                android:layout_width="match_parent"
+                android:layout_width="96dp"
                 android:layout_height="96dp"
                 android:padding="10dp"
-                android:src="@drawable/ic_info_outline_black_24dp"></ImageView>
+                android:src="@drawable/ic_info_outline_black_24dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/textView4"></ImageView>
 
             <TextView
                 android:id="@+id/profile_issuer"
@@ -46,8 +52,11 @@
                 android:text="@string/issuer"
                 android:textAlignment="center"
                 android:textColor="@color/primary_text"
-                android:textSize="20dp" />
-        </LinearLayout>
+                android:textSize="20dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/profile_icon" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
