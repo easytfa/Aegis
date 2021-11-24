@@ -1,10 +1,12 @@
 package com.beemdevelopment.aegis.ui;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -98,6 +100,10 @@ public class MainActivity extends AegisActivity implements EntryListView.Listene
 
     private ActionMode.Callback _actionModeCallbacks = new ActionModeCallbacks();
 
+    // Refresh app on notification
+    public static final String NOTIFY_ACTIVITY_CHECK_REQUESTS = "notify_activity_check_requests";
+    private BroadcastReceiver _broadcastReceiver;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -156,6 +162,28 @@ public class MainActivity extends AegisActivity implements EntryListView.Listene
 
         _fabScrollHelper = new FabScrollHelper(fab);
         _selectedEntries = new ArrayList<>();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        _broadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if(intent.getAction().equals(NOTIFY_ACTIVITY_CHECK_REQUESTS)) {
+                    AsyncTask.execute(() -> getApp().getBrowserLinkManager().checkForNewRequest());
+                }
+            }
+        };
+
+        IntentFilter filter = new IntentFilter(NOTIFY_ACTIVITY_CHECK_REQUESTS);
+        registerReceiver(_broadcastReceiver, filter);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        unregisterReceiver(_broadcastReceiver);
     }
 
     @Override
