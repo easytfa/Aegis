@@ -85,6 +85,8 @@ public class AegisApplication extends Application {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             initNotificationChannels();
         }
+
+        _browserLinkManager.getFCMToken();
     }
 
     public boolean isVaultLocked() {

@@ -26,6 +26,21 @@
         android:theme="@style/Theme.Aegis.Launch"
         android:usesCleartextTraffic="true"
         tools:replace="android:theme">
+
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_close" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/colorAccent" />
+        <meta-data
+            android:name="firebase_messaging_auto_init_enabled"
+            android:value="false" />
+        <meta-data
+            android:name="firebase_analytics_collection_enabled"
+            android:value="false" />
+
+
         <activity android:name=".ui.TransferEntriesActivity"
             android:label="@string/title_activity_transfer" />
         <activity
@@ -102,6 +117,19 @@
         <activity android:name=".ui.ExitActivity" />
 
         <service android:name=".services.NotificationService" />
+
+        <service
+            android:name=".services.FirebaseNotificationService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <provider android:authorities="${applicationId}.firebaseinitprovider"
+            android:name="com.google.firebase.provider.FirebaseInitProvider"
+            android:exported="false"
+            tools:node="remove"/>
 
         <provider
             android:name="androidx.core.content.FileProvider"

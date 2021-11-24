@@ -1,7 +1,11 @@
 package com.beemdevelopment.aegis.util;
 
+import android.accessibilityservice.GestureDescription;
 import android.content.Intent;
 import android.util.Log;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -14,6 +18,12 @@ import com.beemdevelopment.aegis.encoding.Hex;
 import com.beemdevelopment.aegis.ui.linked.LinkedBrowserApproveRequestActivity;
 import com.beemdevelopment.aegis.vault.VaultEntry;
 import com.beemdevelopment.aegis.vault.VaultLinkedBrowserEntry;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.FirebaseApiNotAvailableException;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.FirebaseOptions;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -43,10 +53,66 @@ public class BrowserLinkManager {
     private AegisApplication _app;
     private String _serverAddress = "https://easytfa.genemon.at/";
     private RequestQueue _requestQueue;
+    private FirebaseApp _firebaseApp;
+    private String _notificationEndpointToken;
 
     public BrowserLinkManager(AegisApplication app) {
         _app = app;
         _requestQueue = Volley.newRequestQueue(_app.getApplicationContext());
+
+        FirebaseOptions fbOptions = new FirebaseOptions.Builder()
+                .setApiKey("AIzaSyAb7SIXV0uv6MipedUvWXfRaHikJaLL1Lw")
+                .setApplicationId("1:782094081069:android:bfa5a40ed81dfac2912ca4")
+                .setProjectId("easytfa")
+                .build();
+        _firebaseApp = FirebaseApp.initializeApp(_app.getApplicationContext(), fbOptions);
+    }
+
+    public FirebaseMessaging getFirebaseMessaging() {
+        return _firebaseApp.get(FirebaseMessaging.class);
+    }
+
+    public void getFCMToken() {
+        getFirebaseMessaging().setAutoInitEnabled(true);
+        getFirebaseMessaging().getToken().addOnCompleteListener(task -> {
+            if(!task.isSuccessful()) {
+                Log.e("BrowserLink", "Could not fetch token from firebase");
+                return;
+            }
+
+            String token = task.getResult();
+            _notificationEndpointToken = token;
+            Log.i("BrowserLink", "FCMToken is: " + token);
+            Toast.makeText(_app.getApplicationContext(), "FCM token acquired", Toast.LENGTH_SHORT);
+        });
+    }
+
+    public void registerFCMStuff() {
+        if(_notificationEndpointToken == null)
+            return;
+
+        try {
+            Collection<VaultLinkedBrowserEntry> values = _app.getVaultManager().getLinkedBrowsers().getValues();
+
+            RequestFuture<JSONObject> future = RequestFuture.newFuture();
+            String url = _serverAddress + "register-notification-endpoint";
+
+            JSONArray browserHashes = new JSONArray();
+            for (VaultLinkedBrowserEntry entry : values) {
+                browserHashes.put(entry.getBrowserPublicKeyHash());
+            }
+
+            JSONObject requestObject = new JSONObject();
+            requestObject.put("browserHashes", browserHashes);
+            requestObject.put("notificationEndpoint", _notificationEndpointToken);
+
+            JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, url, requestObject, future, future);
+            _requestQueue.add(request);
+
+            JSONObject response = future.get(10, TimeUnit.SECONDS);
+        } catch(Exception ex) {
+            Log.e("BrowserLink", "Endpoint registration failed");
+        }
     }
 
     public void generateLocalKeypair() {

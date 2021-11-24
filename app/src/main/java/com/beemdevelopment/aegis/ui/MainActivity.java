@@ -519,10 +519,12 @@ public class MainActivity extends AegisActivity implements EntryListView.Listene
             // refresh all codes to prevent showing old ones
             _entryListView.refresh(false);
             AsyncTask.execute(() -> getApp().getBrowserLinkManager().checkForNewRequest());
+            AsyncTask.execute(() -> getApp().getBrowserLinkManager().registerFCMStuff());
         } else {
             loadEntries();
             checkTimeSyncSetting();
             AsyncTask.execute(() -> getApp().getBrowserLinkManager().checkForNewRequest());
+            AsyncTask.execute(() -> getApp().getBrowserLinkManager().registerFCMStuff());
         }
 
         handleDeeplink();
