@@ -1,13 +1,16 @@
 package com.beemdevelopment.aegis.ui;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.Menu;
@@ -35,6 +38,7 @@ import com.beemdevelopment.aegis.otp.GoogleAuthInfoException;
 import com.beemdevelopment.aegis.ui.dialogs.Dialogs;
 import com.beemdevelopment.aegis.ui.fragments.BackupsPreferencesFragment;
 import com.beemdevelopment.aegis.ui.fragments.PreferencesFragment;
+import com.beemdevelopment.aegis.ui.linked.LinkedBrowsersActivity;
 import com.beemdevelopment.aegis.ui.views.EntryListView;
 import com.beemdevelopment.aegis.vault.VaultEntry;
 import com.beemdevelopment.aegis.vault.VaultFile;
@@ -69,6 +73,7 @@ public class MainActivity extends AegisActivity implements EntryListView.Listene
     private static final int CODE_DECRYPT = 4;
     private static final int CODE_PREFERENCES = 5;
     private static final int CODE_SCAN_IMAGE = 6;
+    private static final int CODE_LINKED_BROWSERS = 7;
 
     // permission request codes
     private static final int CODE_PERM_CAMERA = 0;
@@ -94,6 +99,10 @@ public class MainActivity extends AegisActivity implements EntryListView.Listene
     private FabScrollHelper _fabScrollHelper;
 
     private ActionMode.Callback _actionModeCallbacks = new ActionModeCallbacks();
+
+    // Refresh app on notification
+    public static final String NOTIFY_ACTIVITY_CHECK_REQUESTS = "notify_activity_check_requests";
+    private BroadcastReceiver _broadcastReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -153,6 +162,28 @@ public class MainActivity extends AegisActivity implements EntryListView.Listene
 
         _fabScrollHelper = new FabScrollHelper(fab);
         _selectedEntries = new ArrayList<>();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        _broadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if(intent.getAction().equals(NOTIFY_ACTIVITY_CHECK_REQUESTS)) {
+                    AsyncTask.execute(() -> getApp().getBrowserLinkManager().checkForNewRequest());
+                }
+            }
+        };
+
+        IntentFilter filter = new IntentFilter(NOTIFY_ACTIVITY_CHECK_REQUESTS);
+        registerReceiver(_broadcastReceiver, filter);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        unregisterReceiver(_broadcastReceiver);
     }
 
     @Override
@@ -410,6 +441,11 @@ public class MainActivity extends AegisActivity implements EntryListView.Listene
         startActivityForResult(intent, CODE_PREFERENCES);
     }
 
+    private void startLinkedBrowsersActivity() {
+        Intent intent = new Intent(this, LinkedBrowsersActivity.class);
+        startActivityForResult(intent, CODE_LINKED_BROWSERS);
+    }
+
     private void doShortcutActions() {
         Intent intent = getIntent();
         String action = intent.getStringExtra("action");
@@ -510,9 +546,13 @@ public class MainActivity extends AegisActivity implements EntryListView.Listene
 
             // refresh all codes to prevent showing old ones
             _entryListView.refresh(false);
+            AsyncTask.execute(() -> getApp().getBrowserLinkManager().checkForNewRequest());
+            AsyncTask.execute(() -> getApp().getBrowserLinkManager().registerFCMStuff());
         } else {
             loadEntries();
             checkTimeSyncSetting();
+            AsyncTask.execute(() -> getApp().getBrowserLinkManager().checkForNewRequest());
+            AsyncTask.execute(() -> getApp().getBrowserLinkManager().registerFCMStuff());
         }
 
         handleDeeplink();
@@ -604,6 +644,14 @@ public class MainActivity extends AegisActivity implements EntryListView.Listene
         switch (item.getItemId()) {
             case R.id.action_settings: {
                 startPreferencesActivity();
+                return true;
+            }
+            case R.id.action_linked_browsers: {
+                startLinkedBrowsersActivity();
+                return true;
+            }
+            case R.id.action_refresh_linked_browsers: {
+                AsyncTask.execute(() -> getApp().getBrowserLinkManager().checkForNewRequest());
                 return true;
             }
             case R.id.action_about: {

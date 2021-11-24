@@ -8,6 +8,7 @@ import androidx.core.util.AtomicFile;
 import com.beemdevelopment.aegis.Preferences;
 import com.beemdevelopment.aegis.otp.GoogleAuthInfo;
 import com.beemdevelopment.aegis.util.IOUtils;
+import com.beemdevelopment.aegis.util.UUIDMap;
 
 import org.json.JSONObject;
 
@@ -19,6 +20,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyPair;
 import java.text.Collator;
 import java.util.Collection;
 import java.util.TreeSet;
@@ -210,7 +212,7 @@ public class VaultManager {
 
             File tempFile = File.createTempFile(VaultBackupManager.FILENAME_PREFIX, ".json", dir);
             try (InputStream inStream = getAtomicFile(_context).openRead();
-                OutputStream outStream = new FileOutputStream(tempFile)) {
+                 OutputStream outStream = new FileOutputStream(tempFile)) {
                 IOUtils.copy(inStream, outStream);
             }
 
@@ -223,6 +225,19 @@ public class VaultManager {
     public void androidBackupDataChanged() {
         _androidBackups.dataChanged();
     }
+
+    public KeyPair getBrowserLinkKeypair() {
+        return _vault.getBrowserLinkKeyPair();
+    }
+
+    public void setBrowserLinkKeyPair(KeyPair keyPair) {
+        _vault.setBrowserLinkKeyPair(keyPair);
+    }
+
+    public UUIDMap<VaultLinkedBrowserEntry> getLinkedBrowsers() {
+        return _vault.getLinkedBrowsers();
+    }
+
 
     public void addEntry(VaultEntry entry) {
         _vault.getEntries().add(entry);

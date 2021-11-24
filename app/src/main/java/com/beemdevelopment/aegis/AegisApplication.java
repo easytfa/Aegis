@@ -22,6 +22,7 @@ import androidx.lifecycle.ProcessLifecycleOwner;
 import com.beemdevelopment.aegis.icons.IconPackManager;
 import com.beemdevelopment.aegis.services.NotificationService;
 import com.beemdevelopment.aegis.ui.MainActivity;
+import com.beemdevelopment.aegis.util.BrowserLinkManager;
 import com.beemdevelopment.aegis.util.IOUtils;
 import com.beemdevelopment.aegis.vault.Vault;
 import com.beemdevelopment.aegis.vault.VaultFile;
@@ -43,6 +44,7 @@ public class AegisApplication extends Application {
     private List<LockListener> _lockListeners;
     private boolean _blockAutoLock;
     private IconPackManager _iconPackManager;
+    private BrowserLinkManager _browserLinkManager;
 
     private static final String CODE_LOCK_STATUS_ID = "lock_status_channel";
     private static final String CODE_LOCK_VAULT_ACTION = "lock_vault";
@@ -58,6 +60,7 @@ public class AegisApplication extends Application {
         _prefs = new Preferences(this);
         _lockListeners = new ArrayList<>();
         _iconPackManager = new IconPackManager(this);
+        _browserLinkManager = new BrowserLinkManager(this);
 
         Iconics.init(this);
         Iconics.registerFont(new MaterialDesignIconic());
@@ -82,6 +85,8 @@ public class AegisApplication extends Application {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             initNotificationChannels();
         }
+
+        _browserLinkManager.getFCMToken();
     }
 
     public boolean isVaultLocked() {
@@ -127,6 +132,10 @@ public class AegisApplication extends Application {
 
     public VaultManager getVaultManager() {
         return _manager;
+    }
+
+    public BrowserLinkManager getBrowserLinkManager() {
+        return _browserLinkManager;
     }
 
     public IconPackManager getIconPackManager() {

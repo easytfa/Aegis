@@ -48,6 +48,8 @@ public class ScannerActivity extends AegisActivity implements QrCodeAnalyzer.Lis
     private int _batchIndex = -1;
     private List<VaultEntry> _entries;
 
+    private boolean handleBrowserLink = false;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -58,6 +60,8 @@ public class ScannerActivity extends AegisActivity implements QrCodeAnalyzer.Lis
         _lenses = new ArrayList<>();
         _previewView = findViewById(R.id.preview_view);
         _executor = Executors.newSingleThreadExecutor();
+
+        handleBrowserLink = getIntent().getBooleanExtra("browserLink", false);
 
         _cameraProviderFuture = ProcessCameraProvider.getInstance(this);
         _cameraProviderFuture.addListener(() -> {
@@ -170,10 +174,16 @@ public class ScannerActivity extends AegisActivity implements QrCodeAnalyzer.Lis
         if (_analysis != null) {
             try {
                 Uri uri = Uri.parse(result.getText().trim());
-                if (uri.getScheme() != null && uri.getScheme().equals(GoogleAuthInfo.SCHEME_EXPORT)) {
-                    handleExportUri(uri);
+                if(handleBrowserLink) {
+                    if (uri.getScheme() != null && uri.getScheme().equals("aegislink")) {
+                        handleAegisLink(uri);
+                    }
                 } else {
-                    handleUri(uri);
+                    if (uri.getScheme() != null && uri.getScheme().equals(GoogleAuthInfo.SCHEME_EXPORT)) {
+                        handleExportUri(uri);
+                    } else {
+                        handleUri(uri);
+                    }
                 }
             } catch (GoogleAuthInfoException e) {
                 e.printStackTrace();
@@ -184,6 +194,24 @@ public class ScannerActivity extends AegisActivity implements QrCodeAnalyzer.Lis
                         e, ((dialog, which) -> bindPreview(_cameraProvider)));
             }
         }
+    }
+
+    private void handleAegisLink(Uri uri) throws GoogleAuthInfoException {
+        String encodedSecret = uri.getQueryParameter("secret");
+        if (encodedSecret == null) {
+            throw new GoogleAuthInfoException(uri, "LINK: Parameter 'secret' is not present");
+        }
+
+        String encodedHash = uri.getQueryParameter("hash");
+        if (encodedHash == null) {
+            throw new GoogleAuthInfoException(uri, "LINK: Parameter 'hash' is not present");
+        }
+
+        Intent intent = new Intent();
+        intent.putExtra("secret", encodedSecret);
+        intent.putExtra("hash", encodedHash);
+        setResult(RESULT_OK, intent);
+        finish();
     }
 
     private void handleUri(Uri uri) throws GoogleAuthInfoException {
