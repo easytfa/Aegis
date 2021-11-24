@@ -1,5 +1,6 @@
 package com.beemdevelopment.aegis.ui.linked;
 
+import android.Manifest;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -11,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.beemdevelopment.aegis.R;
+import com.beemdevelopment.aegis.helpers.PermissionHelper;
 import com.beemdevelopment.aegis.ui.AegisActivity;
 import com.beemdevelopment.aegis.ui.ScannerActivity;
 import com.beemdevelopment.aegis.ui.dialogs.Dialogs;
@@ -26,6 +28,8 @@ import java.util.List;
 public class LinkedBrowsersActivity extends AegisActivity {
 
     private static final int CODE_SCANNER = 1;
+
+    private static final int CODE_PERM_CAMERA = 0;
     private ArrayList<VaultLinkedBrowserEntry> entries;
     private LinkedBrowserAdapter adapter;
 
@@ -43,6 +47,9 @@ public class LinkedBrowsersActivity extends AegisActivity {
 
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(v -> {
+            if (!PermissionHelper.request(this, CODE_PERM_CAMERA, Manifest.permission.CAMERA)) {
+                return;
+            }
             Intent intent = new Intent(this, ScannerActivity.class);
             intent.putExtra("browserLink", true);
             startActivityForResult(intent, CODE_SCANNER);
@@ -58,6 +65,24 @@ public class LinkedBrowsersActivity extends AegisActivity {
         entriesView.setLayoutManager(layoutManager);
         entriesView.setAdapter(adapter);
         entriesView.setNestedScrollingEnabled(false);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        if (!PermissionHelper.checkResults(grantResults)) {
+            Toast.makeText(this, getString(R.string.permission_denied), Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        switch (requestCode) {
+            case CODE_PERM_CAMERA:
+                Intent intent = new Intent(this, ScannerActivity.class);
+                intent.putExtra("browserLink", true);
+                startActivityForResult(intent, CODE_SCANNER);
+                break;
+        }
+
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
     @Override
