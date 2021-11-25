@@ -51,7 +51,7 @@
                 android:maxLines="1"
                 android:text="@string/issuer"
                 android:textAlignment="center"
-                android:textColor="@color/primary_text"
+                android:textColor="?attr/primaryText"
                 android:textSize="20dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -74,7 +74,7 @@
                 android:includeFontPadding="false"
                 android:layoutDirection="ltr"
                 android:textAppearance="?android:attr/textAppearanceMedium"
-                android:textColor="@color/code_primary_text"
+                android:textColor="?attr/codePrimaryText"
                 android:textAlignment="center"
                 android:textSize="34sp"
                 android:textStyle="normal|bold"
@@ -87,6 +87,21 @@
                 android:id="@+id/progressBar"
                 android:max="5000"
                 android:layout_weight="1"/>
+
+            <TextView
+                android:id="@+id/profile_checksum"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="@string/checksum"
+                android:textAlignment="center"
+                android:textColor="?attr/primaryText"
+                android:textSize="20dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/profile_icon" />
         </LinearLayout>
 
         <LinearLayout

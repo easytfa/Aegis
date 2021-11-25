@@ -231,11 +231,13 @@ public class BrowserLinkManager {
             JSONObject messageJson = new JSONObject(decryptedMessage);
             String action = messageJson.getString("action");
             String browserPubKeyHash = messageJson.getString("hash");
+            String oneTimePad = messageJson.getString("oneTimePad");
+            String checksum = messageJson.getString("checksum");
             switch (action) {
                 case "query-code":
                     String queryUrl = messageJson.getString("url");
 
-                    handleCodeRequest(new URL(queryUrl), browserPubKeyHash);
+                    handleCodeRequest(new URL(queryUrl), browserPubKeyHash, oneTimePad, checksum);
                     break;
             }
 
@@ -244,7 +246,7 @@ public class BrowserLinkManager {
         }
     }
 
-    public void handleCodeRequest(URL url, String browserPubKeyHash) {
+    public void handleCodeRequest(URL url, String browserPubKeyHash, String oneTimePad, String checksum) {
         VaultEntry entry = getEntryForUrl(url);
         if(entry == null) {
             // TODO: Show entry selection dialog
@@ -253,6 +255,8 @@ public class BrowserLinkManager {
         intent.putExtra("entryUUID", entry.getUUID());
         intent.putExtra("url", url.toString());
         intent.putExtra("browserPubKeyHash", browserPubKeyHash);
+        intent.putExtra("oneTimePad", oneTimePad);
+        intent.putExtra("checksum", checksum);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // TODO - what does this actually do? (it works though)
         _app.startActivity(intent);
     }
@@ -273,8 +277,14 @@ public class BrowserLinkManager {
         return null;
     }
 
-    public void sendCode(VaultLinkedBrowserEntry entry, String totpUrl, String code) {
+    public void sendCode(VaultLinkedBrowserEntry entry, String totpUrl, String oneTimePad, String code) {
         try {
+            byte[] codeBytes = code.getBytes(StandardCharsets.UTF_8);
+            byte[] oneTimePadBytes = Base64.decode(oneTimePad);
+            int length = Math.min(codeBytes.length, oneTimePadBytes.length);
+            for(int i = 0; i < length; i++) {
+                codeBytes[i] ^= oneTimePadBytes[i];
+            }
             RequestFuture<JSONObject> future = RequestFuture.newFuture();
             String url = _serverAddress + "send-code";
 
@@ -284,7 +294,7 @@ public class BrowserLinkManager {
 
             JSONObject browserMessage = new JSONObject();
             browserMessage.put("url", totpUrl);
-            browserMessage.put("code", code);
+            browserMessage.put("code", Base64.encode(codeBytes));
             String encryptedMessage = encryptWithPublicKey(browserMessage.toString(), publicKey);
 
             JSONObject requestObject = new JSONObject();
