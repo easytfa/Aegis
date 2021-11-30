@@ -51,7 +51,7 @@ import javax.crypto.spec.PSource;
 
 public class BrowserLinkManager {
     private AegisApplication _app;
-    private String _serverAddress = "https://easytfa.genemon.at/";
+    private String _serverAddress = "https://eu-relay1.easytfa.com/";
     private RequestQueue _requestQueue;
     private FirebaseApp _firebaseApp;
     private String _notificationEndpointToken;
