@@ -53,7 +53,7 @@ public class LinkBrowserTask extends ProgressDialogTask<LinkBrowserTask.Params, 
             X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(publicKeyData);
             PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(publicKeySpec);
 
-            Boolean success = _app.getBrowserLinkManager().linkBrowser(publicKey, params._hash, params._secret);
+            _app.getBrowserLinkManager().linkBrowser(publicKey, params._hash, params._secret);
             return new Result(publicKeyStr, "Chrome Something");
         } catch (Exception e) {
             e.printStackTrace();

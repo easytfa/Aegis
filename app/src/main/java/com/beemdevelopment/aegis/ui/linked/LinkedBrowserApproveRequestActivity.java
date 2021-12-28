@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.amulyakhare.textdrawable.TextDrawable;
@@ -31,6 +30,7 @@ public class LinkedBrowserApproveRequestActivity extends AegisActivity {
     private TotpProgressBar _progressBar;
     private TextView _issuerTextView;
     private TextView _profileCode;
+    private TextView _checksumTextView;
     private VaultEntry _entry;
     private int _codeGroupSize = 3;
 
@@ -43,6 +43,8 @@ public class LinkedBrowserApproveRequestActivity extends AegisActivity {
         UUID entryUUID = (UUID) intent.getSerializableExtra("entryUUID");
         String browserPubKeyHash = intent.getStringExtra("browserPubKeyHash");
         String url = intent.getStringExtra("url");
+        String oneTimePad = intent.getStringExtra("oneTimePad");
+        String checksum = intent.getStringExtra("checksum");
 
         _entry = getApp().getVaultManager().getEntryByUUID(entryUUID);
 
@@ -66,12 +68,14 @@ public class LinkedBrowserApproveRequestActivity extends AegisActivity {
         _profileCode = findViewById(R.id.profile_code);
         _issuerTextView = findViewById(R.id.profile_issuer);
         _issuerTextView.setText(_entry.getIssuer());
+        _checksumTextView = findViewById(R.id.profile_checksum);
+        _checksumTextView.setText(checksum);
 
         Button approveButton = findViewById(R.id.approveButton);
         approveButton.setOnClickListener(l -> {
 
             VaultLinkedBrowserEntry linkedBrowserEntry = getApp().getBrowserLinkManager().getEntryByPubKeyHash(browserPubKeyHash);
-            getApp().getBrowserLinkManager().sendCode(linkedBrowserEntry, url, _entry.getInfo().getOtp());
+            getApp().getBrowserLinkManager().sendCode(linkedBrowserEntry, url, oneTimePad, _entry.getInfo().getOtp());
 
             setApproval(true);
         });
