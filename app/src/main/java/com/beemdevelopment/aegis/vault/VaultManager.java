@@ -6,6 +6,7 @@ import android.content.Context;
 import androidx.core.util.AtomicFile;
 
 import com.beemdevelopment.aegis.Preferences;
+import com.beemdevelopment.aegis.easytfa.VaultLinkedBrowserEntry;
 import com.beemdevelopment.aegis.otp.GoogleAuthInfo;
 import com.beemdevelopment.aegis.util.IOUtils;
 import com.beemdevelopment.aegis.util.UUIDMap;

@@ -2,6 +2,7 @@ package com.beemdevelopment.aegis.vault;
 
 import android.util.Log;
 
+import com.beemdevelopment.aegis.easytfa.VaultLinkedBrowserEntry;
 import com.beemdevelopment.aegis.encoding.Base64;
 import com.beemdevelopment.aegis.util.UUIDMap;
 

@@ -1,26 +1,16 @@
-package com.beemdevelopment.aegis.ui.tasks;
+package com.beemdevelopment.aegis.easytfa;
 
 import android.content.Context;
-import android.os.SystemClock;
 import android.util.Log;
 
 import com.beemdevelopment.aegis.AegisApplication;
 import com.beemdevelopment.aegis.R;
-import com.beemdevelopment.aegis.crypto.CryptoUtils;
-import com.beemdevelopment.aegis.crypto.SCryptParameters;
 import com.beemdevelopment.aegis.encoding.Base64;
-import com.beemdevelopment.aegis.vault.VaultLinkedBrowserEntry;
-import com.beemdevelopment.aegis.vault.slots.PasswordSlot;
-
-import org.json.JSONException;
+import com.beemdevelopment.aegis.ui.tasks.ProgressDialogTask;
 
 import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
-
-import javax.crypto.SecretKey;
 
 public class LinkBrowserTask extends ProgressDialogTask<LinkBrowserTask.Params, LinkBrowserTask.Result> {
     private Callback _cb;
@@ -38,14 +28,14 @@ public class LinkBrowserTask extends ProgressDialogTask<LinkBrowserTask.Params, 
         LinkBrowserTask.Params params = args[0];
 
         if(_app.getVaultManager().getBrowserLinkKeypair() == null) {
-            _app.getBrowserLinkManager().generateLocalKeypair();
+            _app.getEasyTfaManager().generateLocalKeypair();
             Log.i("BrowserLink", "Keypair null, generating new keypair");
         }
 
         try {
-            String publicKeyStr = _app.getBrowserLinkManager().requestPublicKeyForHash(params._hash);
+            String publicKeyStr = _app.getEasyTfaManager().requestPublicKeyForHash(params._hash);
 
-            if(!_app.getBrowserLinkManager().verifyPublicKey(publicKeyStr, params._hash)) {
+            if(!_app.getEasyTfaManager().verifyPublicKey(publicKeyStr, params._hash)) {
                 return new Result(new Exception("Public key does not match hash"));
             }
 
@@ -53,7 +43,7 @@ public class LinkBrowserTask extends ProgressDialogTask<LinkBrowserTask.Params, 
             X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(publicKeyData);
             PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(publicKeySpec);
 
-            _app.getBrowserLinkManager().linkBrowser(publicKey, params._hash, params._secret);
+            _app.getEasyTfaManager().linkBrowser(publicKey, params._hash, params._secret);
             return new Result(publicKeyStr, "Chrome Something");
         } catch (Exception e) {
             e.printStackTrace();

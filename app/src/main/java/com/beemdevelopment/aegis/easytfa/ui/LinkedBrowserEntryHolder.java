@@ -1,4 +1,4 @@
-package com.beemdevelopment.aegis.ui.linked;
+package com.beemdevelopment.aegis.easytfa.ui;
 
 import android.view.View;
 import android.widget.TextView;

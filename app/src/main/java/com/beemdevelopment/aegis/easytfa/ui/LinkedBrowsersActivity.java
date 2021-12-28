@@ -1,13 +1,11 @@
-package com.beemdevelopment.aegis.ui.linked;
+package com.beemdevelopment.aegis.easytfa.ui;
 
 import android.Manifest;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -16,14 +14,12 @@ import com.beemdevelopment.aegis.helpers.PermissionHelper;
 import com.beemdevelopment.aegis.ui.AegisActivity;
 import com.beemdevelopment.aegis.ui.ScannerActivity;
 import com.beemdevelopment.aegis.ui.dialogs.Dialogs;
-import com.beemdevelopment.aegis.ui.tasks.LinkBrowserTask;
-import com.beemdevelopment.aegis.vault.VaultLinkedBrowserEntry;
+import com.beemdevelopment.aegis.easytfa.LinkBrowserTask;
+import com.beemdevelopment.aegis.easytfa.VaultLinkedBrowserEntry;
 import com.beemdevelopment.aegis.vault.VaultManagerException;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
 public class LinkedBrowsersActivity extends AegisActivity {
 

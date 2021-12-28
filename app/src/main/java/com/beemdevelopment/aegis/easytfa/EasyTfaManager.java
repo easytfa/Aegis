@@ -1,18 +1,17 @@
-package com.beemdevelopment.aegis.util;
+package com.beemdevelopment.aegis.easytfa;
 
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.util.Log;
 import android.widget.Toast;
 
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.Volley;
 import com.beemdevelopment.aegis.AegisApplication;
-import com.beemdevelopment.aegis.browserlink.BrowserLinkClient;
 import com.beemdevelopment.aegis.encoding.Base64;
 import com.beemdevelopment.aegis.encoding.Hex;
-import com.beemdevelopment.aegis.ui.linked.LinkedBrowserApproveRequestActivity;
+import com.beemdevelopment.aegis.easytfa.ui.LinkedBrowserApproveRequestActivity;
 import com.beemdevelopment.aegis.vault.VaultEntry;
-import com.beemdevelopment.aegis.vault.VaultLinkedBrowserEntry;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.messaging.FirebaseMessaging;
@@ -38,32 +37,48 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.OAEPParameterSpec;
 import javax.crypto.spec.PSource;
 
-public class BrowserLinkManager {
+public class EasyTfaManager {
     private AegisApplication _app;
     private String _serverAddress = "https://eu-relay1.easytfa.com/";
     private RequestQueue _requestQueue;
     private FirebaseApp _firebaseApp;
     private String _notificationEndpointToken;
-    private BrowserLinkClient _browserLinkClient;
+    private EasyTfaApiClient _easyTfaApiClient;
 
-    public BrowserLinkManager(AegisApplication app) {
+    public EasyTfaManager(AegisApplication app) {
         _app = app;
         _requestQueue = Volley.newRequestQueue(_app.getApplicationContext());
 
-        FirebaseOptions fbOptions = new FirebaseOptions.Builder()
-                .setApiKey("AIzaSyAb7SIXV0uv6MipedUvWXfRaHikJaLL1Lw")
-                .setApplicationId("1:782094081069:android:bfa5a40ed81dfac2912ca4")
-                .setProjectId("easytfa")
-                .build();
-        _firebaseApp = FirebaseApp.initializeApp(_app.getApplicationContext(), fbOptions);
-        _browserLinkClient = new BrowserLinkClient(_app, _serverAddress);
+        _easyTfaApiClient = new EasyTfaApiClient(_app, _serverAddress);
     }
 
-    public FirebaseMessaging getFirebaseMessaging() {
+    public void initialize() {
+        try {
+            EasyTfaApiClient.EasyTfaConfig config = _easyTfaApiClient.getConfig();
+            if(config.pushNotificationsSupported() && _firebaseApp == null) {
+                AsyncTask.execute(() -> initializeFirebase(config));
+            }
+
+            checkForNewRequest();
+        } catch(Exception ex) {
+            Log.e("EasyTFA", "Initialization failed", ex);
+        }
+    }
+
+    //region Firebase
+    private FirebaseMessaging getFirebaseMessaging() {
         return _firebaseApp.get(FirebaseMessaging.class);
     }
 
-    public void getFCMToken() {
+    private void initializeFirebase(EasyTfaApiClient.EasyTfaConfig config) {
+
+        FirebaseOptions fbOptions = new FirebaseOptions.Builder()
+                .setApiKey(config.getPushNotificationApiKey())
+                .setApplicationId(config.getPushNotificationApplicationId())
+                .setProjectId(config.getPushNotificationProjectId())
+                .build();
+        _firebaseApp = FirebaseApp.initializeApp(_app.getApplicationContext(), fbOptions);
+
         getFirebaseMessaging().setAutoInitEnabled(true);
         getFirebaseMessaging().getToken().addOnCompleteListener(task -> {
             if(!task.isSuccessful()) {
@@ -74,28 +89,24 @@ public class BrowserLinkManager {
             String token = task.getResult();
             _notificationEndpointToken = token;
             Log.i("BrowserLink", "FCMToken is: " + token);
-            Toast.makeText(_app.getApplicationContext(), "FCM token acquired", Toast.LENGTH_SHORT);
+
+            try {
+                Collection<VaultLinkedBrowserEntry> values = _app.getVaultManager().getLinkedBrowsers().getValues();
+
+                ArrayList<String> browserHashes = new ArrayList<String>();
+                for (VaultLinkedBrowserEntry entry : values) {
+                    browserHashes.add(entry.getBrowserPublicKeyHash());
+                }
+
+                _easyTfaApiClient.registerNotificationEndpoint(_notificationEndpointToken, browserHashes);
+            } catch(Exception ex) {
+                Log.e("BrowserLink", "Endpoint registration failed");
+            }
         });
     }
+    //endregion
 
-    public void registerFCMStuff() {
-        if(_notificationEndpointToken == null)
-            return;
-
-        try {
-            Collection<VaultLinkedBrowserEntry> values = _app.getVaultManager().getLinkedBrowsers().getValues();
-
-            ArrayList<String> browserHashes = new ArrayList<String>();
-            for (VaultLinkedBrowserEntry entry : values) {
-                browserHashes.add(entry.getBrowserPublicKeyHash());
-            }
-
-            _browserLinkClient.registerNotificationEndpoint(_notificationEndpointToken, browserHashes);
-        } catch(Exception ex) {
-            Log.e("BrowserLink", "Endpoint registration failed");
-        }
-    }
-
+    //region Key Stuff
     public void generateLocalKeypair() {
         try {
             KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
@@ -108,32 +119,6 @@ public class BrowserLinkManager {
 
     public String getEncodedLocalPublicKey() {
         return Base64.encode(_app.getVaultManager().getBrowserLinkKeypair().getPublic().getEncoded());
-    }
-
-    public String requestPublicKeyForHash(String hash) throws BrowserLinkClient.BrowserLinkException {
-        return _browserLinkClient.getPublicKeyForHash(hash);
-    }
-
-    public void linkBrowser(PublicKey publicKey, String hash, String secret) throws JSONException, BrowserLinkClient.BrowserLinkException {
-        String encodedLocalPublicKey = getEncodedLocalPublicKey();
-
-        JSONObject objectToEncrypt = new JSONObject();
-        objectToEncrypt.put("secret", secret);
-        objectToEncrypt.put("appPublicKeyHash", hashKey(encodedLocalPublicKey));
-        String encryptedString = createEncryptedMessage(publicKey, "link", objectToEncrypt);
-
-        JSONObject dataObject = new JSONObject();
-        dataObject.put("appPublicKey", encodedLocalPublicKey);
-
-        _browserLinkClient.sendMessage(hash, encryptedString, dataObject);
-    }
-
-    private String createEncryptedMessage(PublicKey browserPublicKey, String type, JSONObject content) throws JSONException {
-        if(!content.has("type")) {
-            content.put("type", type);
-        }
-        String stringToEncrypt = content.toString();
-        return encryptWithPublicKey(stringToEncrypt, browserPublicKey);
     }
 
     public String hashKey(String encodedKey) {
@@ -178,13 +163,40 @@ public class BrowserLinkManager {
             return "";
         }
     }
+    //endregion
+
+    public String requestPublicKeyForHash(String hash) throws EasyTfaException {
+        return _easyTfaApiClient.getPublicKeyForHash(hash);
+    }
+
+    public void linkBrowser(PublicKey publicKey, String hash, String secret) throws JSONException, EasyTfaException {
+        String encodedLocalPublicKey = getEncodedLocalPublicKey();
+
+        JSONObject objectToEncrypt = new JSONObject();
+        objectToEncrypt.put("secret", secret);
+        objectToEncrypt.put("appPublicKeyHash", hashKey(encodedLocalPublicKey));
+        String encryptedString = createEncryptedMessage(publicKey, "link", objectToEncrypt);
+
+        JSONObject dataObject = new JSONObject();
+        dataObject.put("appPublicKey", encodedLocalPublicKey);
+
+        _easyTfaApiClient.sendMessage(hash, encryptedString, dataObject);
+    }
+
+    private String createEncryptedMessage(PublicKey browserPublicKey, String type, JSONObject content) throws JSONException {
+        if(!content.has("type")) {
+            content.put("type", type);
+        }
+        String stringToEncrypt = content.toString();
+        return encryptWithPublicKey(stringToEncrypt, browserPublicKey);
+    }
 
     public void checkForNewRequest() {
         Collection<VaultLinkedBrowserEntry> linkedBrowsers = _app.getVaultManager().getLinkedBrowsers().getValues();
         List<String> linkedBrowserHashes = linkedBrowsers.stream().map(VaultLinkedBrowserEntry::getBrowserPublicKeyHash).collect(Collectors.toList());
 
         try {
-            JSONObject response = _browserLinkClient.getRequest(linkedBrowserHashes);
+            JSONObject response = _easyTfaApiClient.getRequest(linkedBrowserHashes);
             if (response.isNull("message")) {
                 return;
             }
@@ -208,7 +220,7 @@ public class BrowserLinkManager {
             }
 
         } catch (Exception ex) {
-            Log.e("BrowserLink", "Something failed", ex);
+            Log.e("EasyTFA", "Could not parse new request", ex);
         }
     }
 
@@ -261,9 +273,10 @@ public class BrowserLinkManager {
             browserMessage.put("code", Base64.encode(codeBytes));
             String encryptedMessage = createEncryptedMessage(publicKey, "code", browserMessage);
 
-            _browserLinkClient.sendMessage(entry.getBrowserPublicKeyHash(), encryptedMessage, null);
+            _easyTfaApiClient.sendMessage(entry.getBrowserPublicKeyHash(), encryptedMessage, null);
         } catch (Exception ex) {
-            Log.e("BrowserLink", "Something failed", ex);
+            Log.e("EasyTFA", "Could not send code", ex);
         }
     }
+
 }

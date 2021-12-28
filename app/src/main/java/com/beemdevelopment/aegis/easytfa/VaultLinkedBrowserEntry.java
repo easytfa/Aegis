@@ -1,7 +1,8 @@
-package com.beemdevelopment.aegis.vault;
+package com.beemdevelopment.aegis.easytfa;
 
 import com.beemdevelopment.aegis.encoding.Hex;
 import com.beemdevelopment.aegis.util.UUIDMap;
+import com.beemdevelopment.aegis.vault.VaultEntryException;
 
 import org.json.JSONException;
 import org.json.JSONObject;

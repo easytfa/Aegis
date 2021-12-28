@@ -1,4 +1,4 @@
-package com.beemdevelopment.aegis.browserlink;
+package com.beemdevelopment.aegis.easytfa;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -14,41 +14,41 @@ import org.json.JSONObject;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
-public class BrowserLinkClient {
+public class EasyTfaApiClient {
 
     private final RequestQueue _requestQueue;
     private AegisApplication _app;
     private final String _serverUrl;
-    private BrowserLinkConfig _browserLinkConfig;
+    private EasyTfaConfig _easyTfaConfig;
 
-    public BrowserLinkClient(AegisApplication app, String serverUrl) {
+    public EasyTfaApiClient(AegisApplication app, String serverUrl) {
         _app = app;
         _serverUrl = serverUrl;
         _requestQueue = Volley.newRequestQueue(_app.getApplicationContext());
     }
 
-    public BrowserLinkConfig getConfig() throws BrowserLinkException {
-        JSONObject response = request(Request.Method.GET, "/config", null);
+    public EasyTfaConfig getConfig() throws EasyTfaException {
+        JSONObject response = request(Request.Method.GET, "config", null);
         try {
-            _browserLinkConfig = new BrowserLinkConfig(response);
-            return _browserLinkConfig;
+            _easyTfaConfig = new EasyTfaConfig(response);
+            return _easyTfaConfig;
         } catch(Exception ex) {
-            throw new BrowserLinkException(ex);
+            throw new EasyTfaException(ex);
         }
     }
 
-    public void registerNotificationEndpoint(String notificationEndpoint, Collection<String> browserHashes) throws BrowserLinkException {
+    public void registerNotificationEndpoint(String notificationEndpoint, Collection<String> browserHashes) throws EasyTfaException {
         try {
             JSONObject requestObject = new JSONObject();
             requestObject.put("browserHashes", new JSONArray(browserHashes));
             requestObject.put("notificationEndpoint", notificationEndpoint);
             request(Request.Method.POST, "register-notification-endpoint", requestObject);
         } catch(Exception ex) {
-            throw new BrowserLinkException(ex);
+            throw new EasyTfaException(ex);
         }
     }
 
-    public String getPublicKeyForHash(String hash) throws BrowserLinkException {
+    public String getPublicKeyForHash(String hash) throws EasyTfaException {
         try {
             JSONObject requestObject = new JSONObject();
             requestObject.put("hash", hash);
@@ -56,11 +56,11 @@ public class BrowserLinkClient {
             return response.getString("publicKey");
         }
         catch (Exception ex) {
-            throw new  BrowserLinkException(ex);
+            throw new EasyTfaException(ex);
         }
     }
 
-    public void sendMessage(String browserHash, String encryptedMessage, JSONObject additionalData) throws BrowserLinkException {
+    public void sendMessage(String browserHash, String encryptedMessage, JSONObject additionalData) throws EasyTfaException {
         try {
             JSONObject requestObject = new JSONObject();
             requestObject.put("hash", browserHash);
@@ -70,22 +70,22 @@ public class BrowserLinkClient {
             }
             request(Request.Method.POST, "message", requestObject);
         } catch(Exception ex) {
-            throw new BrowserLinkException(ex);
+            throw new EasyTfaException(ex);
         }
     }
 
-    public JSONObject getRequest(Collection<String> browserHashes) throws BrowserLinkException {
+    public JSONObject getRequest(Collection<String> browserHashes) throws EasyTfaException {
         try {
             JSONArray linkBrowserHashArray = new JSONArray(browserHashes);
             JSONObject requestObject = new JSONObject();
             requestObject.put("hashes", linkBrowserHashArray);
             return request(Request.Method.POST, "code-queries-by-hashes", requestObject);
         } catch (JSONException e) {
-            throw new BrowserLinkException(e);
+            throw new EasyTfaException(e);
         }
     }
 
-    private JSONObject request(int method, String path, JSONObject body) throws BrowserLinkException {
+    private JSONObject request(int method, String path, JSONObject body) throws EasyTfaException {
         try {
             RequestFuture<JSONObject> future = RequestFuture.newFuture();
             String url = _serverUrl + path;
@@ -99,28 +99,18 @@ public class BrowserLinkClient {
             }
             return response;
         } catch (Exception ex) {
-            throw new BrowserLinkException(ex);
+            throw new EasyTfaException(ex);
         }
     }
 
-    public class BrowserLinkException extends Exception {
-        public BrowserLinkException(String message) {
-            super(message);
-        }
-
-        public BrowserLinkException(Throwable cause) {
-            super(cause);
-        }
-    }
-
-    public class BrowserLinkConfig {
+    public class EasyTfaConfig {
         final String _version;
         final Boolean _pushNotificationsSupported;
         final String _pushNotificationApiKey;
         final String _pushNotificationApplicationId;
         final String _pushNotificationProjectId;
 
-        public BrowserLinkConfig(String _version, Boolean _pushNotificationsSupported, String _pushNotificationApiKey, String _pushNotificationApplicationId, String _pushNotificationProjectId) {
+        public EasyTfaConfig(String _version, Boolean _pushNotificationsSupported, String _pushNotificationApiKey, String _pushNotificationApplicationId, String _pushNotificationProjectId) {
             this._version = _version;
             this._pushNotificationsSupported = _pushNotificationsSupported;
             this._pushNotificationApiKey = _pushNotificationApiKey;
@@ -128,13 +118,13 @@ public class BrowserLinkClient {
             this._pushNotificationProjectId = _pushNotificationProjectId;
         }
 
-        public BrowserLinkConfig(JSONObject object) throws JSONException {
+        public EasyTfaConfig(JSONObject object) throws JSONException {
             _version = object.getString("version");
             JSONObject push = object.getJSONObject("push");
-            _pushNotificationsSupported = object.getBoolean("supported");
-            _pushNotificationApiKey = object.getString("apiKey");
-            _pushNotificationApplicationId = object.getString("applicationId");
-            _pushNotificationProjectId = object.getString("projectId");
+            _pushNotificationsSupported = push.getBoolean("supported");
+            _pushNotificationApiKey = push.getString("apiKey");
+            _pushNotificationApplicationId = push.getString("applicationId");
+            _pushNotificationProjectId = push.getString("projectId");
         }
 
         public String getVersion() {

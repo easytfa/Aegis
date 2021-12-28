@@ -1,6 +1,7 @@
-package com.beemdevelopment.aegis.ui.linked;
+package com.beemdevelopment.aegis.easytfa.ui;
 
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -18,7 +19,7 @@ import com.beemdevelopment.aegis.ui.AegisActivity;
 import com.beemdevelopment.aegis.ui.glide.IconLoader;
 import com.beemdevelopment.aegis.ui.views.TotpProgressBar;
 import com.beemdevelopment.aegis.vault.VaultEntry;
-import com.beemdevelopment.aegis.vault.VaultLinkedBrowserEntry;
+import com.beemdevelopment.aegis.easytfa.VaultLinkedBrowserEntry;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 
@@ -74,8 +75,9 @@ public class LinkedBrowserApproveRequestActivity extends AegisActivity {
         Button approveButton = findViewById(R.id.approveButton);
         approveButton.setOnClickListener(l -> {
 
-            VaultLinkedBrowserEntry linkedBrowserEntry = getApp().getBrowserLinkManager().getEntryByPubKeyHash(browserPubKeyHash);
-            getApp().getBrowserLinkManager().sendCode(linkedBrowserEntry, url, oneTimePad, _entry.getInfo().getOtp());
+            VaultLinkedBrowserEntry linkedBrowserEntry = getApp().getEasyTfaManager().getEntryByPubKeyHash(browserPubKeyHash);
+            AsyncTask.execute(() -> getApp().getEasyTfaManager().sendCode(linkedBrowserEntry, url, oneTimePad, _entry.getInfo().getOtp()));
+            ;
 
             setApproval(true);
         });
