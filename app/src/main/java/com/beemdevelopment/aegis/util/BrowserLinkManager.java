@@ -1,31 +1,22 @@
 package com.beemdevelopment.aegis.util;
 
-import android.accessibilityservice.GestureDescription;
 import android.content.Intent;
 import android.util.Log;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-
-import com.android.volley.Request;
 import com.android.volley.RequestQueue;
-import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.RequestFuture;
 import com.android.volley.toolbox.Volley;
 import com.beemdevelopment.aegis.AegisApplication;
+import com.beemdevelopment.aegis.browserlink.BrowserLinkClient;
 import com.beemdevelopment.aegis.encoding.Base64;
 import com.beemdevelopment.aegis.encoding.Hex;
 import com.beemdevelopment.aegis.ui.linked.LinkedBrowserApproveRequestActivity;
 import com.beemdevelopment.aegis.vault.VaultEntry;
 import com.beemdevelopment.aegis.vault.VaultLinkedBrowserEntry;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.FirebaseApiNotAvailableException;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.messaging.FirebaseMessaging;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -38,11 +29,9 @@ import java.security.MessageDigest;
 import java.security.PublicKey;
 import java.security.spec.MGF1ParameterSpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import javax.crypto.Cipher;
@@ -55,6 +44,7 @@ public class BrowserLinkManager {
     private RequestQueue _requestQueue;
     private FirebaseApp _firebaseApp;
     private String _notificationEndpointToken;
+    private BrowserLinkClient _browserLinkClient;
 
     public BrowserLinkManager(AegisApplication app) {
         _app = app;
@@ -66,6 +56,7 @@ public class BrowserLinkManager {
                 .setProjectId("easytfa")
                 .build();
         _firebaseApp = FirebaseApp.initializeApp(_app.getApplicationContext(), fbOptions);
+        _browserLinkClient = new BrowserLinkClient(_app, _serverAddress);
     }
 
     public FirebaseMessaging getFirebaseMessaging() {
@@ -94,22 +85,12 @@ public class BrowserLinkManager {
         try {
             Collection<VaultLinkedBrowserEntry> values = _app.getVaultManager().getLinkedBrowsers().getValues();
 
-            RequestFuture<JSONObject> future = RequestFuture.newFuture();
-            String url = _serverAddress + "register-notification-endpoint";
-
-            JSONArray browserHashes = new JSONArray();
+            ArrayList<String> browserHashes = new ArrayList<String>();
             for (VaultLinkedBrowserEntry entry : values) {
-                browserHashes.put(entry.getBrowserPublicKeyHash());
+                browserHashes.add(entry.getBrowserPublicKeyHash());
             }
 
-            JSONObject requestObject = new JSONObject();
-            requestObject.put("browserHashes", browserHashes);
-            requestObject.put("notificationEndpoint", _notificationEndpointToken);
-
-            JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, url, requestObject, future, future);
-            _requestQueue.add(request);
-
-            JSONObject response = future.get(10, TimeUnit.SECONDS);
+            _browserLinkClient.registerNotificationEndpoint(_notificationEndpointToken, browserHashes);
         } catch(Exception ex) {
             Log.e("BrowserLink", "Endpoint registration failed");
         }
@@ -129,39 +110,30 @@ public class BrowserLinkManager {
         return Base64.encode(_app.getVaultManager().getBrowserLinkKeypair().getPublic().getEncoded());
     }
 
-    public String requestPublicKeyForHash(String hash) throws JSONException, InterruptedException, ExecutionException, TimeoutException {
-        RequestFuture<JSONObject> future = RequestFuture.newFuture();
-        String url = _serverAddress + "public-key-by-hash";
-        JSONObject requestObject = new JSONObject();
-        requestObject.put("hash", hash);
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, url, requestObject, future, future);
-        _requestQueue.add(request);
-
-        JSONObject response = future.get(10, TimeUnit.SECONDS);
-        return response.getString("publicKey");
+    public String requestPublicKeyForHash(String hash) throws BrowserLinkClient.BrowserLinkException {
+        return _browserLinkClient.getPublicKeyForHash(hash);
     }
 
-    public Boolean linkBrowser(PublicKey publicKey, String hash, String secret) throws JSONException, InterruptedException, ExecutionException, TimeoutException {
+    public void linkBrowser(PublicKey publicKey, String hash, String secret) throws JSONException, BrowserLinkClient.BrowserLinkException {
         String encodedLocalPublicKey = getEncodedLocalPublicKey();
-        RequestFuture<JSONObject> future = RequestFuture.newFuture();
-        String url = _serverAddress + "link";
 
         JSONObject objectToEncrypt = new JSONObject();
         objectToEncrypt.put("secret", secret);
         objectToEncrypt.put("appPublicKeyHash", hashKey(encodedLocalPublicKey));
-        String stringToEncrypt = objectToEncrypt.toString();
-        String encryptedString = encryptWithPublicKey(stringToEncrypt, publicKey);
+        String encryptedString = createEncryptedMessage(publicKey, "link", objectToEncrypt);
 
-        JSONObject requestObject = new JSONObject();
-        requestObject.put("hash", hash);
-        requestObject.put("message", encryptedString);
-        requestObject.put("appPublicKey", encodedLocalPublicKey);
+        JSONObject dataObject = new JSONObject();
+        dataObject.put("appPublicKey", encodedLocalPublicKey);
 
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, url, requestObject, future, future);
-        _requestQueue.add(request);
+        _browserLinkClient.sendMessage(hash, encryptedString, dataObject);
+    }
 
-        JSONObject response = future.get(10, TimeUnit.SECONDS);
-        return response.getBoolean("success");
+    private String createEncryptedMessage(PublicKey browserPublicKey, String type, JSONObject content) throws JSONException {
+        if(!content.has("type")) {
+            content.put("type", type);
+        }
+        String stringToEncrypt = content.toString();
+        return encryptWithPublicKey(stringToEncrypt, browserPublicKey);
     }
 
     public String hashKey(String encodedKey) {
@@ -212,29 +184,23 @@ public class BrowserLinkManager {
         List<String> linkedBrowserHashes = linkedBrowsers.stream().map(VaultLinkedBrowserEntry::getBrowserPublicKeyHash).collect(Collectors.toList());
 
         try {
-            RequestFuture<JSONObject> future = RequestFuture.newFuture();
-            String url = _serverAddress + "code-queries-by-hashes";
-
-            JSONArray linkBrowserHashArray = new JSONArray(linkedBrowserHashes);
-            JSONObject requestObject = new JSONObject();
-            requestObject.put("hashes", linkBrowserHashArray);
-            JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, url, requestObject, future, future);
-            _requestQueue.add(request);
-
-            JSONObject response = future.get(10, TimeUnit.SECONDS);
+            JSONObject response = _browserLinkClient.getRequest(linkedBrowserHashes);
             if (response.isNull("message")) {
                 return;
             }
 
             String encryptedMessage = response.getString("message");
             String decryptedMessage = decryptWithPrivateKey(encryptedMessage);
+
             JSONObject messageJson = new JSONObject(decryptedMessage);
+
             String action = messageJson.getString("action");
-            String browserPubKeyHash = messageJson.getString("hash");
-            String oneTimePad = messageJson.getString("oneTimePad");
-            String checksum = messageJson.getString("checksum");
+
             switch (action) {
                 case "query-code":
+                    String browserPubKeyHash = messageJson.getString("hash");
+                    String oneTimePad = messageJson.getString("oneTimePad");
+                    String checksum = messageJson.getString("checksum");
                     String queryUrl = messageJson.getString("url");
 
                     handleCodeRequest(new URL(queryUrl), browserPubKeyHash, oneTimePad, checksum);
@@ -285,8 +251,6 @@ public class BrowserLinkManager {
             for(int i = 0; i < length; i++) {
                 codeBytes[i] ^= oneTimePadBytes[i];
             }
-            RequestFuture<JSONObject> future = RequestFuture.newFuture();
-            String url = _serverAddress + "send-code";
 
             byte[] publicKeyData = Base64.decode(entry.getBrowserPublicKey());
             X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(publicKeyData);
@@ -295,14 +259,9 @@ public class BrowserLinkManager {
             JSONObject browserMessage = new JSONObject();
             browserMessage.put("url", totpUrl);
             browserMessage.put("code", Base64.encode(codeBytes));
-            String encryptedMessage = encryptWithPublicKey(browserMessage.toString(), publicKey);
+            String encryptedMessage = createEncryptedMessage(publicKey, "code", browserMessage);
 
-            JSONObject requestObject = new JSONObject();
-            requestObject.put("hash", entry.getBrowserPublicKeyHash());
-            requestObject.put("message", encryptedMessage);
-
-            JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, url, requestObject, future, future);
-            _requestQueue.add(request);
+            _browserLinkClient.sendMessage(entry.getBrowserPublicKeyHash(), encryptedMessage, null);
         } catch (Exception ex) {
             Log.e("BrowserLink", "Something failed", ex);
         }
