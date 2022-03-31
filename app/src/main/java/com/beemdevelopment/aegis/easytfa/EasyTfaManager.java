@@ -12,6 +12,7 @@ import com.beemdevelopment.aegis.encoding.Base64;
 import com.beemdevelopment.aegis.encoding.Hex;
 import com.beemdevelopment.aegis.easytfa.ui.LinkedBrowserApproveRequestActivity;
 import com.beemdevelopment.aegis.vault.VaultEntry;
+import com.beemdevelopment.aegis.vault.VaultManagerException;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.messaging.FirebaseMessaging;
@@ -39,17 +40,17 @@ import javax.crypto.spec.PSource;
 
 public class EasyTfaManager {
     private AegisApplication _app;
-    private String _serverAddress = "https://eu-relay1.easytfa.com/";
-    private RequestQueue _requestQueue;
     private FirebaseApp _firebaseApp;
     private String _notificationEndpointToken;
-    private EasyTfaApiClient _easyTfaApiClient;
+    private final EasyTfaApiClient _easyTfaApiClient;
+    private final EasyTfaCrypto _easyTfaCrypto;
+    private final EasyTfaBrowserMessenger _browserMessenger;
 
     public EasyTfaManager(AegisApplication app) {
         _app = app;
-        _requestQueue = Volley.newRequestQueue(_app.getApplicationContext());
-
-        _easyTfaApiClient = new EasyTfaApiClient(_app, _serverAddress);
+        _easyTfaCrypto = new EasyTfaCrypto(app.getVaultManager());
+        _easyTfaApiClient = new EasyTfaApiClient(_app, _app.getPreferences().getEasyTfaServerUrl());
+        _browserMessenger = new EasyTfaBrowserMessenger(_easyTfaApiClient, _easyTfaCrypto);
     }
 
     public void initialize() {
@@ -106,91 +107,6 @@ public class EasyTfaManager {
     }
     //endregion
 
-    //region Key Stuff
-    public void generateLocalKeypair() {
-        try {
-            KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
-            kpg.initialize(4096);
-            KeyPair keyPair = kpg.generateKeyPair();
-            _app.getVaultManager().setBrowserLinkKeyPair(keyPair);
-        } catch (Exception ex) {
-        }
-    }
-
-    public String getEncodedLocalPublicKey() {
-        return Base64.encode(_app.getVaultManager().getBrowserLinkKeypair().getPublic().getEncoded());
-    }
-
-    public String hashKey(String encodedKey) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            return Hex.encode(digest.digest(encodedKey.getBytes(StandardCharsets.UTF_8)));
-        } catch(Exception ex) {
-            return null;
-        }
-    }
-
-    public Boolean verifyPublicKey(String encodedPublicKey, String hash) {
-        return hash.equals(hashKey(encodedPublicKey));
-    }
-
-    public String encryptWithPublicKey(String data, PublicKey key) {
-        try {
-            Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPPadding");
-            OAEPParameterSpec oaepParams = new OAEPParameterSpec("SHA-256", "MGF1", new MGF1ParameterSpec("SHA-256"), PSource.PSpecified.DEFAULT);
-            cipher.init(Cipher.ENCRYPT_MODE, key, oaepParams);
-            byte[] encrypted = cipher.doFinal(data.getBytes(StandardCharsets.UTF_8));
-            return Base64.encode(encrypted);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "";
-        }
-    }
-
-    public String decryptWithPrivateKey(String data) throws Exception {
-        KeyPair localKeyPair = _app.getVaultManager().getBrowserLinkKeypair();
-        if (localKeyPair == null)
-            throw new Exception("Local KeyPair not generated");
-
-        try {
-            Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPPadding");
-            OAEPParameterSpec oaepParams = new OAEPParameterSpec("SHA-256", "MGF1", new MGF1ParameterSpec("SHA-256"), PSource.PSpecified.DEFAULT);
-            cipher.init(Cipher.DECRYPT_MODE, localKeyPair.getPrivate(), oaepParams);
-            byte[] decrypted = cipher.doFinal(Base64.decode(data));
-            return new String(decrypted, StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "";
-        }
-    }
-    //endregion
-
-    public String requestPublicKeyForHash(String hash) throws EasyTfaException {
-        return _easyTfaApiClient.getPublicKeyForHash(hash);
-    }
-
-    public void linkBrowser(PublicKey publicKey, String hash, String secret) throws JSONException, EasyTfaException {
-        String encodedLocalPublicKey = getEncodedLocalPublicKey();
-
-        JSONObject objectToEncrypt = new JSONObject();
-        objectToEncrypt.put("secret", secret);
-        objectToEncrypt.put("appPublicKeyHash", hashKey(encodedLocalPublicKey));
-        String encryptedString = createEncryptedMessage(publicKey, "link", objectToEncrypt);
-
-        JSONObject dataObject = new JSONObject();
-        dataObject.put("appPublicKey", encodedLocalPublicKey);
-
-        _easyTfaApiClient.sendMessage(hash, encryptedString, dataObject);
-    }
-
-    private String createEncryptedMessage(PublicKey browserPublicKey, String type, JSONObject content) throws JSONException {
-        if(!content.has("type")) {
-            content.put("type", type);
-        }
-        String stringToEncrypt = content.toString();
-        return encryptWithPublicKey(stringToEncrypt, browserPublicKey);
-    }
-
     public void checkForNewRequest() {
         Collection<VaultLinkedBrowserEntry> linkedBrowsers = _app.getVaultManager().getLinkedBrowsers().getValues();
         List<String> linkedBrowserHashes = linkedBrowsers.stream().map(VaultLinkedBrowserEntry::getBrowserPublicKeyHash).collect(Collectors.toList());
@@ -202,7 +118,7 @@ public class EasyTfaManager {
             }
 
             String encryptedMessage = response.getString("message");
-            String decryptedMessage = decryptWithPrivateKey(encryptedMessage);
+            String decryptedMessage = _easyTfaCrypto.decrypt(encryptedMessage);
 
             JSONObject messageJson = new JSONObject(decryptedMessage);
 
@@ -247,36 +163,66 @@ public class EasyTfaManager {
         return null;
     }
 
-    public VaultLinkedBrowserEntry getEntryByPubKeyHash(String hash) {
+    //region Linked Browser
+    /**
+     * Gets a linked browser from the store
+     * @param publicKeyHash Hash of the public key of the browser
+     */
+    public VaultLinkedBrowserEntry getLinkedBrowser(String publicKeyHash) {
         for(VaultLinkedBrowserEntry entry: _app.getVaultManager().getLinkedBrowsers()) {
-            if(entry.getBrowserPublicKeyHash().equals(hash))
+            if(entry.getBrowserPublicKeyHash().equals(publicKeyHash))
                 return entry;
         }
         return null;
     }
 
-    public void sendCode(VaultLinkedBrowserEntry entry, String totpUrl, String oneTimePad, String code) {
-        try {
-            byte[] codeBytes = code.getBytes(StandardCharsets.UTF_8);
-            byte[] oneTimePadBytes = Base64.decode(oneTimePad);
-            int length = Math.min(codeBytes.length, oneTimePadBytes.length);
-            for(int i = 0; i < length; i++) {
-                codeBytes[i] ^= oneTimePadBytes[i];
-            }
-
-            byte[] publicKeyData = Base64.decode(entry.getBrowserPublicKey());
-            X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(publicKeyData);
-            PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(publicKeySpec);
-
-            JSONObject browserMessage = new JSONObject();
-            browserMessage.put("url", totpUrl);
-            browserMessage.put("code", Base64.encode(codeBytes));
-            String encryptedMessage = createEncryptedMessage(publicKey, "code", browserMessage);
-
-            _easyTfaApiClient.sendMessage(entry.getBrowserPublicKeyHash(), encryptedMessage, null);
-        } catch (Exception ex) {
-            Log.e("EasyTFA", "Could not send code", ex);
+    /**
+     * Adds a linked browser to the vault
+     * @param browserName Name of the browser
+     * @param publicKey Public key of the browser
+     * @throws VaultManagerException
+     */
+    public void addLinkedBrowser(String browserName, String publicKey) throws VaultManagerException{
+        for (VaultLinkedBrowserEntry linkedBrowser: _app.getVaultManager().getLinkedBrowsers()) {
+            if(linkedBrowser.getBrowserPublicKey().equals(publicKey))
+                return;
         }
+
+        VaultLinkedBrowserEntry linkedBrowser = new VaultLinkedBrowserEntry(browserName, publicKey);
+        _app.getVaultManager().getLinkedBrowsers().add(linkedBrowser);
+        _app.getVaultManager().save(true);
     }
 
+    /**
+     * Removes a linked browser from the vault
+     * @param publicKeyHash Hash of the public key of the browser
+     * @throws VaultManagerException
+     */
+    public void removeLinkedBrowser(String publicKeyHash) throws VaultManagerException{
+        VaultLinkedBrowserEntry entry = null;
+        for (VaultLinkedBrowserEntry linkedBrowser: _app.getVaultManager().getLinkedBrowsers()) {
+            if(linkedBrowser.getBrowserPublicKeyHash().equals(publicKeyHash)) {
+                entry = linkedBrowser;
+                break;
+            }
+        }
+
+        if(entry != null) {
+            _app.getVaultManager().getLinkedBrowsers().remove(entry);
+            _app.getVaultManager().save(true);
+        }
+    }
+    //endregion
+
+    public EasyTfaApiClient getApiClient() {
+        return _easyTfaApiClient;
+    }
+
+    public EasyTfaCrypto getCrypto() {
+        return _easyTfaCrypto;
+    }
+
+    public EasyTfaBrowserMessenger getBrowserMessenger() {
+        return _browserMessenger;
+    }
 }

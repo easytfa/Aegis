@@ -75,8 +75,8 @@ public class LinkedBrowserApproveRequestActivity extends AegisActivity {
         Button approveButton = findViewById(R.id.approveButton);
         approveButton.setOnClickListener(l -> {
 
-            VaultLinkedBrowserEntry linkedBrowserEntry = getApp().getEasyTfaManager().getEntryByPubKeyHash(browserPubKeyHash);
-            AsyncTask.execute(() -> getApp().getEasyTfaManager().sendCode(linkedBrowserEntry, url, oneTimePad, _entry.getInfo().getOtp()));
+            VaultLinkedBrowserEntry linkedBrowserEntry = getApp().getEasyTfaManager().getLinkedBrowser(browserPubKeyHash);
+            AsyncTask.execute(() -> getApp().getEasyTfaManager().getBrowserMessenger().sendCode(linkedBrowserEntry, url, oneTimePad, _entry.getInfo().getOtp()));
             ;
 
             setApproval(true);

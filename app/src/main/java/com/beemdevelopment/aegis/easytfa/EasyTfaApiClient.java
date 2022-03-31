@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 public class EasyTfaApiClient {
 
     private final RequestQueue _requestQueue;
-    private AegisApplication _app;
+    private final AegisApplication _app;
     private final String _serverUrl;
     private EasyTfaConfig _easyTfaConfig;
 
@@ -28,7 +28,7 @@ public class EasyTfaApiClient {
     }
 
     public EasyTfaConfig getConfig() throws EasyTfaException {
-        JSONObject response = request(Request.Method.GET, "config", null);
+        JSONObject response = apiRequest(Request.Method.GET, "config", null);
         try {
             _easyTfaConfig = new EasyTfaConfig(response);
             return _easyTfaConfig;
@@ -42,7 +42,7 @@ public class EasyTfaApiClient {
             JSONObject requestObject = new JSONObject();
             requestObject.put("browserHashes", new JSONArray(browserHashes));
             requestObject.put("notificationEndpoint", notificationEndpoint);
-            request(Request.Method.POST, "register-notification-endpoint", requestObject);
+            apiRequest(Request.Method.POST, "register-notification-endpoint", requestObject);
         } catch(Exception ex) {
             throw new EasyTfaException(ex);
         }
@@ -52,7 +52,7 @@ public class EasyTfaApiClient {
         try {
             JSONObject requestObject = new JSONObject();
             requestObject.put("hash", hash);
-            JSONObject response = request(Request.Method.POST, "public-key-by-hash", requestObject);
+            JSONObject response = apiRequest(Request.Method.POST, "public-key-by-hash", requestObject);
             return response.getString("publicKey");
         }
         catch (Exception ex) {
@@ -68,7 +68,7 @@ public class EasyTfaApiClient {
             if(additionalData != null) {
                 requestObject.put("data", additionalData);
             }
-            request(Request.Method.POST, "message", requestObject);
+            apiRequest(Request.Method.POST, "message", requestObject);
         } catch(Exception ex) {
             throw new EasyTfaException(ex);
         }
@@ -79,13 +79,13 @@ public class EasyTfaApiClient {
             JSONArray linkBrowserHashArray = new JSONArray(browserHashes);
             JSONObject requestObject = new JSONObject();
             requestObject.put("hashes", linkBrowserHashArray);
-            return request(Request.Method.POST, "code-queries-by-hashes", requestObject);
+            return apiRequest(Request.Method.POST, "code-queries-by-hashes", requestObject);
         } catch (JSONException e) {
             throw new EasyTfaException(e);
         }
     }
 
-    private JSONObject request(int method, String path, JSONObject body) throws EasyTfaException {
+    private JSONObject apiRequest(int method, String path, JSONObject body) throws EasyTfaException {
         try {
             RequestFuture<JSONObject> future = RequestFuture.newFuture();
             String url = _serverUrl + path;

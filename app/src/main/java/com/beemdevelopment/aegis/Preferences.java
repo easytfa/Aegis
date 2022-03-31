@@ -323,4 +323,29 @@ public class Preferences {
             return Collections.emptyList();
         }
     }
+
+
+    public boolean isEasyTfaEnabled() {
+        return _prefs.getBoolean("pref_easytfa_enabled", false);
+    }
+
+    public void setEasyTfaEnabled(boolean enabled) {
+        _prefs.edit().putBoolean("pref_easytfa_enabled", enabled).apply();
+    }
+
+    public boolean isEasyTfaFirebaseEnabled() {
+        return _prefs.getBoolean("pref_easytfa_firebase_enabled", false);
+    }
+
+    public void setEasyTfaFirebaseEnabled(boolean enabled) {
+        _prefs.edit().putBoolean("pref_easytfa_firebase_enabled", enabled).apply();
+    }
+
+    public String getEasyTfaServerUrl() {
+        return _prefs.getString("pref_easytfa_server_url", "eu-relay1.easytfa.com");
+    }
+
+    public void setEasyTfaFirebaseEnabled(String url) {
+        _prefs.edit().putString("pref_easytfa_firebase_enabled", url).apply();
+    }
 }

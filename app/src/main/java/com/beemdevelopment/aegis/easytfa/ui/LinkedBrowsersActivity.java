@@ -106,34 +106,14 @@ public class LinkedBrowsersActivity extends AegisActivity {
         String secret = data.getStringExtra("secret");
         String hash = data.getStringExtra("hash");
 
-        LinkBrowserTask task = new LinkBrowserTask(getApp(), this, (LinkBrowserTask.Result result) -> {
-            if(result.isSuccess()) {
-                createNewBrowserLinkEntry(result);
-            } else {
+        LinkBrowserTask task = new LinkBrowserTask(getApp().getEasyTfaManager(), this, (LinkBrowserTask.Result result) -> {
+            if(!result.isSuccess()) {
                 Dialogs.showErrorDialog(this, R.string.linking_browser_error, result.getException());
             }
         });
 
         LinkBrowserTask.Params params = new LinkBrowserTask.Params(secret, hash);
         task.execute(this.getLifecycle(), params);
-    }
-
-    private void createNewBrowserLinkEntry(LinkBrowserTask.Result result) {
-        for (VaultLinkedBrowserEntry linkedBrowser: getApp().getVaultManager().getLinkedBrowsers()) {
-            if(linkedBrowser.getBrowserPublicKey().equals(result.getPubKeyBrowser()))
-                return;
-        }
-
-        VaultLinkedBrowserEntry linkedBrowser = new VaultLinkedBrowserEntry(result.getBrowserName(), result.getPubKeyBrowser());
-        getApp().getVaultManager().getLinkedBrowsers().add(linkedBrowser);
-        try {
-            getApp().getVaultManager().save(true);
-            Toast.makeText(this.getApplicationContext(), "Linked browser", Toast.LENGTH_SHORT).show();
-        }
-        catch(VaultManagerException ex) {
-            Toast.makeText(this.getApplicationContext(), "Could not save vault", Toast.LENGTH_SHORT).show();
-        }
-        updateLinkedBrowserList();
     }
 
     @Override

@@ -29,6 +29,12 @@
         app:summary="@string/pref_section_security_summary" />
 
     <Preference
+        android:fragment="com.beemdevelopment.aegis.easytfa.ui.EasyTfaPreferencesFragment"
+        app:icon="@drawable/ic_counter_black_24dp"
+        app:title="@string/pref_section_easytfa"
+        app:summary="@string/pref_section_easytfa_summary" />
+
+    <Preference
         android:fragment="com.beemdevelopment.aegis.ui.fragments.BackupsPreferencesFragment"
         app:icon="@drawable/ic_cloud_upload_outline_black_24dp"
         app:title="@string/pref_section_backups_title"
