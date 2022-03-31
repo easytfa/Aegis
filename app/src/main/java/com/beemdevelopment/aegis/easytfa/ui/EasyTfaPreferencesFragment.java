@@ -34,6 +34,8 @@ public class EasyTfaPreferencesFragment extends PreferencesFragment {
         _easyTfaTestServerConnectionPreference = findPreference("pref_easytfa_server_test");
         _easyTfaServerUrlPreference = findPreference("pref_easytfa_server_url");
 
+        setEnabledStates(getApp().getPreferences().isEasyTfaEnabled());
+
         _easyTfaEnabledPreference.setOnPreferenceChangeListener((preference, newValue) -> {
             getResult().putExtra("needsRecreate", true);
             setEnabledStates((boolean) newValue);

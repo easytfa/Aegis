@@ -644,10 +644,6 @@ public class MainActivity extends AegisActivity implements EntryListView.Listene
                 startPreferencesActivity();
                 return true;
             }
-            case R.id.action_linked_browsers: {
-                startLinkedBrowsersActivity();
-                return true;
-            }
             case R.id.action_refresh_linked_browsers: {
                 AsyncTask.execute(() -> getApp().getEasyTfaManager().checkForNewRequest());
                 return true;

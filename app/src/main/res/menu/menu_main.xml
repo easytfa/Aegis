@@ -49,11 +49,6 @@
         android:title="@string/action_settings"
         app:showAsAction="never" />
     <item
-        android:id="@+id/action_linked_browsers"
-        android:orderInCategory="100"
-        android:title="@string/action_linked_browsers"
-        app:showAsAction="never" />
-    <item
         android:id="@+id/action_refresh_linked_browsers"
         android:orderInCategory="100"
         android:title="RefreshLinked"

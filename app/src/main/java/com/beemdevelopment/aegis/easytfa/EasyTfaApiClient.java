@@ -93,7 +93,7 @@ public class EasyTfaApiClient {
             JsonObjectRequest request = new JsonObjectRequest(method, url, body, future, future);
             _requestQueue.add(request);
 
-            JSONObject response = future.get(2, TimeUnit.SECONDS);
+            JSONObject response = future.get(5, TimeUnit.SECONDS);
             if(!response.getBoolean("success")) {
                 throw new Exception("Request failed. Success false");
             }

@@ -342,7 +342,7 @@ public class Preferences {
     }
 
     public String getEasyTfaServerUrl() {
-        return _prefs.getString("pref_easytfa_server_url", "eu-relay1.easytfa.com");
+        return _prefs.getString("pref_easytfa_server_url", "https://eu-relay1.easytfa.com/");
     }
 
     public void setEasyTfaFirebaseEnabled(String url) {

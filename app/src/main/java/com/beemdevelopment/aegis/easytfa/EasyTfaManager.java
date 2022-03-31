@@ -3,13 +3,8 @@ package com.beemdevelopment.aegis.easytfa;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.util.Log;
-import android.widget.Toast;
 
-import com.android.volley.RequestQueue;
-import com.android.volley.toolbox.Volley;
 import com.beemdevelopment.aegis.AegisApplication;
-import com.beemdevelopment.aegis.encoding.Base64;
-import com.beemdevelopment.aegis.encoding.Hex;
 import com.beemdevelopment.aegis.easytfa.ui.LinkedBrowserApproveRequestActivity;
 import com.beemdevelopment.aegis.vault.VaultEntry;
 import com.beemdevelopment.aegis.vault.VaultManagerException;
@@ -17,47 +12,36 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.messaging.FirebaseMessaging;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.MessageDigest;
-import java.security.PublicKey;
-import java.security.spec.MGF1ParameterSpec;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import javax.crypto.Cipher;
-import javax.crypto.spec.OAEPParameterSpec;
-import javax.crypto.spec.PSource;
-
 public class EasyTfaManager {
     private AegisApplication _app;
     private FirebaseApp _firebaseApp;
     private String _notificationEndpointToken;
-    private final EasyTfaApiClient _easyTfaApiClient;
-    private final EasyTfaCrypto _easyTfaCrypto;
-    private final EasyTfaBrowserMessenger _browserMessenger;
+    private EasyTfaApiClient _easyTfaApiClient;
+    private EasyTfaCrypto _easyTfaCrypto;
+    private EasyTfaBrowserMessenger _browserMessenger;
 
     public EasyTfaManager(AegisApplication app) {
         _app = app;
-        _easyTfaCrypto = new EasyTfaCrypto(app.getVaultManager());
-        _easyTfaApiClient = new EasyTfaApiClient(_app, _app.getPreferences().getEasyTfaServerUrl());
-        _browserMessenger = new EasyTfaBrowserMessenger(_easyTfaApiClient, _easyTfaCrypto);
     }
 
     public void initialize() {
         try {
-            EasyTfaApiClient.EasyTfaConfig config = _easyTfaApiClient.getConfig();
-            if(config.pushNotificationsSupported() && _firebaseApp == null) {
-                AsyncTask.execute(() -> initializeFirebase(config));
+            if(_easyTfaCrypto == null) {
+                _easyTfaCrypto = new EasyTfaCrypto(_app.getVaultManager());
+                _easyTfaApiClient = new EasyTfaApiClient(_app, _app.getPreferences().getEasyTfaServerUrl());
+                _browserMessenger = new EasyTfaBrowserMessenger(_easyTfaApiClient, _easyTfaCrypto);
+                EasyTfaApiClient.EasyTfaConfig config = _easyTfaApiClient.getConfig();
+                if (config.pushNotificationsSupported() && _firebaseApp == null) {
+                    AsyncTask.execute(() -> initializeFirebase(config));
+                }
             }
 
             checkForNewRequest();
@@ -99,9 +83,16 @@ public class EasyTfaManager {
                     browserHashes.add(entry.getBrowserPublicKeyHash());
                 }
 
-                _easyTfaApiClient.registerNotificationEndpoint(_notificationEndpointToken, browserHashes);
+                // TODO - find a better solution for this if possible
+                AsyncTask.execute(() -> {
+                    try {
+                        _easyTfaApiClient.registerNotificationEndpoint(_notificationEndpointToken, browserHashes);
+                    } catch (EasyTfaException e) {
+                        e.printStackTrace();
+                    }
+                });
             } catch(Exception ex) {
-                Log.e("BrowserLink", "Endpoint registration failed");
+                Log.e("BrowserLink", "Endpoint registration failed", ex);
             }
         });
     }

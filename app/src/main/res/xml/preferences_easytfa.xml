@@ -37,7 +37,7 @@
         android:title="@string/pref_cat_easytfa_server"
         app:iconSpaceReserved="false">
         <EditTextPreference
-            android:defaultValue="https://eu-relay1.easytfa.com"
+            android:defaultValue="https://eu-relay1.easytfa.com/"
             android:key="pref_easytfa_server_url"
             android:title="@string/pref_easytfa_server_url"
             android:summary="@string/pref_easytfa_server_url_summary"

@@ -32,7 +32,6 @@ public class EasyTfaCrypto {
                 keyPair = _vaultManager.getBrowserLinkKeypair();
             }
         } catch(Exception ex) {
-
         }
     }
 
