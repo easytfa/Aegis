@@ -34,7 +34,7 @@ public class EasyTfaManager {
 
     public void initialize() {
         try {
-            if(_easyTfaCrypto == null) {
+            if (_easyTfaCrypto == null) {
                 _easyTfaCrypto = new EasyTfaCrypto(_app.getVaultManager());
                 _easyTfaApiClient = new EasyTfaApiClient(_app, _app.getPreferences().getEasyTfaServerUrl());
                 _browserMessenger = new EasyTfaBrowserMessenger(_easyTfaApiClient, _easyTfaCrypto);
@@ -45,7 +45,7 @@ public class EasyTfaManager {
             }
 
             checkForNewRequest();
-        } catch(Exception ex) {
+        } catch (Exception ex) {
             Log.e("EasyTFA", "Initialization failed", ex);
         }
     }
@@ -66,7 +66,7 @@ public class EasyTfaManager {
 
         getFirebaseMessaging().setAutoInitEnabled(true);
         getFirebaseMessaging().getToken().addOnCompleteListener(task -> {
-            if(!task.isSuccessful()) {
+            if (!task.isSuccessful()) {
                 Log.e("BrowserLink", "Could not fetch token from firebase");
                 return;
             }
@@ -91,7 +91,7 @@ public class EasyTfaManager {
                         e.printStackTrace();
                     }
                 });
-            } catch(Exception ex) {
+            } catch (Exception ex) {
                 Log.e("BrowserLink", "Endpoint registration failed", ex);
             }
         });
@@ -133,7 +133,7 @@ public class EasyTfaManager {
 
     public void handleCodeRequest(URL url, String browserPubKeyHash, String oneTimePad, String checksum) {
         VaultEntry entry = getEntryForUrl(url);
-        if(entry == null) {
+        if (entry == null) {
             // TODO: Show entry selection dialog
         }
         Intent intent = new Intent(this._app.getApplicationContext(), LinkedBrowserApproveRequestActivity.class);
@@ -148,20 +148,22 @@ public class EasyTfaManager {
 
     public VaultEntry getEntryForUrl(URL url) {
         for (VaultEntry entry : _app.getVaultManager().getEntries()) {
-            if(entry.getBrowserLinkUrls().contains(url.toString()) || entry.getNote().contains(url.toString())) // TODO - this currently also checks the note
+            if (entry.getBrowserLinkUrls().contains(url.toString()) || entry.getNote().contains(url.toString())) // TODO - this currently also checks the note
                 return entry;
         }
         return null;
     }
 
     //region Linked Browser
+
     /**
      * Gets a linked browser from the store
+     *
      * @param publicKeyHash Hash of the public key of the browser
      */
     public VaultLinkedBrowserEntry getLinkedBrowser(String publicKeyHash) {
-        for(VaultLinkedBrowserEntry entry: _app.getVaultManager().getLinkedBrowsers()) {
-            if(entry.getBrowserPublicKeyHash().equals(publicKeyHash))
+        for (VaultLinkedBrowserEntry entry : _app.getVaultManager().getLinkedBrowsers()) {
+            if (entry.getBrowserPublicKeyHash().equals(publicKeyHash))
                 return entry;
         }
         return null;
@@ -169,13 +171,14 @@ public class EasyTfaManager {
 
     /**
      * Adds a linked browser to the vault
+     *
      * @param browserName Name of the browser
-     * @param publicKey Public key of the browser
+     * @param publicKey   Public key of the browser
      * @throws VaultManagerException
      */
-    public void addLinkedBrowser(String browserName, String publicKey) throws VaultManagerException{
-        for (VaultLinkedBrowserEntry linkedBrowser: _app.getVaultManager().getLinkedBrowsers()) {
-            if(linkedBrowser.getBrowserPublicKey().equals(publicKey))
+    public void addLinkedBrowser(String browserName, String publicKey) throws VaultManagerException {
+        for (VaultLinkedBrowserEntry linkedBrowser : _app.getVaultManager().getLinkedBrowsers()) {
+            if (linkedBrowser.getBrowserPublicKey().equals(publicKey))
                 return;
         }
 
@@ -186,22 +189,31 @@ public class EasyTfaManager {
 
     /**
      * Removes a linked browser from the vault
+     *
      * @param publicKeyHash Hash of the public key of the browser
      * @throws VaultManagerException
      */
-    public void removeLinkedBrowser(String publicKeyHash) throws VaultManagerException{
+    public void removeLinkedBrowser(String publicKeyHash) throws VaultManagerException {
         VaultLinkedBrowserEntry entry = null;
-        for (VaultLinkedBrowserEntry linkedBrowser: _app.getVaultManager().getLinkedBrowsers()) {
-            if(linkedBrowser.getBrowserPublicKeyHash().equals(publicKeyHash)) {
+        for (VaultLinkedBrowserEntry linkedBrowser : _app.getVaultManager().getLinkedBrowsers()) {
+            if (linkedBrowser.getBrowserPublicKeyHash().equals(publicKeyHash)) {
                 entry = linkedBrowser;
                 break;
             }
         }
 
-        if(entry != null) {
+        if (entry != null) {
             _app.getVaultManager().getLinkedBrowsers().remove(entry);
             _app.getVaultManager().save(true);
         }
+    }
+
+    /**
+     * Removes all linked browsers from the vault
+     *
+     */
+    public void removeAllLinkedBrowsers() {
+        _app.getVaultManager().getLinkedBrowsers().wipe();
     }
     //endregion
 

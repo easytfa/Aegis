@@ -32,6 +32,11 @@
             android:title="@string/pref_easytfa_browser_linked"
             android:summary="@string/pref_easytfa_browser_linked_summary"
             app:iconSpaceReserved="false"/>
+        <Preference
+            android:key="pref_easytfa_unlink_all_browsers"
+            android:title="@string/pref_easytfa_unlink_all_browsers"
+            android:summary="@string/pref_easytfa_unlink_all_browsers_summary"
+            app:iconSpaceReserved="false"/>
     </PreferenceCategory>
     <PreferenceCategory
         android:title="@string/pref_cat_easytfa_server"

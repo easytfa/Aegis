@@ -18,6 +18,7 @@ public class EasyTfaPreferencesFragment extends PreferencesFragment {
     private Preference _easyTfaFirebaseEnabledPreference;
     private Preference _easyTfaLinkBrowserPreference;
     private Preference _easyTfaLinkedBrowsersPreference;
+    private Preference _easyTfaUnlinkAllBrowsersPreference;
     private Preference _easyTfaServerUrlPreference;
     private Preference _easyTfaTestServerConnectionPreference;
 
@@ -31,8 +32,9 @@ public class EasyTfaPreferencesFragment extends PreferencesFragment {
         _easyTfaFirebaseEnabledPreference = findPreference("pref_easytfa_firebase_enabled");
         _easyTfaLinkBrowserPreference = findPreference("pref_easytfa_browser_link");
         _easyTfaLinkedBrowsersPreference = findPreference("pref_easytfa_browser_linked");
-        _easyTfaTestServerConnectionPreference = findPreference("pref_easytfa_server_test");
+        _easyTfaUnlinkAllBrowsersPreference = findPreference("pref_easytfa_unlink_all_browsers");
         _easyTfaServerUrlPreference = findPreference("pref_easytfa_server_url");
+        _easyTfaTestServerConnectionPreference = findPreference("pref_easytfa_server_test");
 
         setEnabledStates(getApp().getPreferences().isEasyTfaEnabled());
 
@@ -76,11 +78,25 @@ public class EasyTfaPreferencesFragment extends PreferencesFragment {
                     .create());
             return true;
         });
+
+        _easyTfaUnlinkAllBrowsersPreference.setOnPreferenceClickListener(preference -> {
+            Dialogs.showSecureDialog(new AlertDialog.Builder(getActivity())
+                    .setTitle(R.string.pref_easytfa_unlink_all_browsers)
+                    .setMessage(R.string.pref_easytfa_unlink_all_browsers_dialog)
+                    .setPositiveButton(android.R.string.yes, (dialog, which) -> {
+                        getApp().getEasyTfaManager().removeAllLinkedBrowsers();
+                        saveVault();
+                    })
+                    .setNegativeButton(android.R.string.no, null)
+                    .create());
+            return true;
+        });
     }
 
     private void setEnabledStates(boolean enabled) {
         _easyTfaFirebaseEnabledPreference.setEnabled(enabled);
         _easyTfaServerUrlPreference.setEnabled(enabled);
+        _easyTfaUnlinkAllBrowsersPreference.setEnabled(enabled);
         _easyTfaTestServerConnectionPreference.setEnabled(enabled);
         _easyTfaLinkBrowserPreference.setEnabled(enabled);
         _easyTfaLinkedBrowsersPreference.setEnabled(enabled);
