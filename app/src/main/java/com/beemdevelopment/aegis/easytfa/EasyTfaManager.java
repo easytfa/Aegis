@@ -102,6 +102,10 @@ public class EasyTfaManager {
         Collection<VaultLinkedBrowserEntry> linkedBrowsers = _app.getVaultManager().getLinkedBrowsers().getValues();
         List<String> linkedBrowserHashes = linkedBrowsers.stream().map(VaultLinkedBrowserEntry::getBrowserPublicKeyHash).collect(Collectors.toList());
 
+        if(linkedBrowserHashes.size() == 0) {
+            return;
+        }
+
         try {
             JSONObject response = _easyTfaApiClient.getRequest(linkedBrowserHashes);
             if (response.isNull("message")) {
