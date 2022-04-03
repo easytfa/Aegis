@@ -19,10 +19,10 @@ import androidx.lifecycle.LifecycleEventObserver;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ProcessLifecycleOwner;
 
+import com.beemdevelopment.aegis.easytfa.EasyTfaManager;
 import com.beemdevelopment.aegis.icons.IconPackManager;
 import com.beemdevelopment.aegis.services.NotificationService;
 import com.beemdevelopment.aegis.ui.MainActivity;
-import com.beemdevelopment.aegis.easytfa.EasyTfaManager;
 import com.beemdevelopment.aegis.util.IOUtils;
 import com.beemdevelopment.aegis.vault.Vault;
 import com.beemdevelopment.aegis.vault.VaultFile;
@@ -48,6 +48,7 @@ public class AegisApplication extends Application {
     private EasyTfaManager _easyTfaManager;
 
     private static final String CODE_LOCK_STATUS_ID = "lock_status_channel";
+    private static final String EASYTFA_NOTIFICATION_ID = "easytfa_notification_channel";
     private static final String CODE_LOCK_VAULT_ACTION = "lock_vault";
 
     static {
@@ -214,6 +215,11 @@ public class AegisApplication extends Application {
 
             NotificationManager notificationManager = getSystemService(NotificationManager.class);
             notificationManager.createNotificationChannel(channel);
+
+            CharSequence easytfaName = getString(R.string.channel_name_easytfa);
+            int easytfaImportance = NotificationManager.IMPORTANCE_HIGH;
+            NotificationChannel easytfaChannel = new NotificationChannel(EASYTFA_NOTIFICATION_ID, easytfaName, easytfaImportance);
+            notificationManager.createNotificationChannel(easytfaChannel);
         }
     }
 
