@@ -46,6 +46,7 @@ public class LinkedBrowserApproveRequestActivity extends AegisActivity {
         String url = intent.getStringExtra("url");
         String oneTimePad = intent.getStringExtra("oneTimePad");
         String checksum = intent.getStringExtra("checksum");
+        String connectionId = intent.getStringExtra("connectionId");
 
         _entry = getApp().getVaultManager().getEntryByUUID(entryUUID);
 
@@ -76,8 +77,7 @@ public class LinkedBrowserApproveRequestActivity extends AegisActivity {
         approveButton.setOnClickListener(l -> {
 
             VaultLinkedBrowserEntry linkedBrowserEntry = getApp().getEasyTfaManager().getLinkedBrowser(browserPubKeyHash);
-            AsyncTask.execute(() -> getApp().getEasyTfaManager().getBrowserMessenger().sendCode(linkedBrowserEntry, url, oneTimePad, _entry.getInfo().getOtp()));
-            ;
+            AsyncTask.execute(() -> getApp().getEasyTfaManager().getBrowserMessenger().sendCode(linkedBrowserEntry, connectionId, url, oneTimePad, _entry.getInfo().getOtp()));
 
             setApproval(true);
         });

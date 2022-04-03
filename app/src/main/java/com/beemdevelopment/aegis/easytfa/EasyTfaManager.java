@@ -108,6 +108,7 @@ public class EasyTfaManager {
                 return;
             }
 
+            String connectionId = response.getString("connectionId");
             String encryptedMessage = response.getString("message");
             String decryptedMessage = _easyTfaCrypto.decrypt(encryptedMessage);
 
@@ -122,7 +123,7 @@ public class EasyTfaManager {
                     String checksum = messageJson.getString("checksum");
                     String queryUrl = messageJson.getString("url");
 
-                    handleCodeRequest(new URL(queryUrl), browserPubKeyHash, oneTimePad, checksum);
+                    handleCodeRequest(new URL(queryUrl), browserPubKeyHash, oneTimePad, checksum, connectionId);
                     break;
             }
 
@@ -131,7 +132,7 @@ public class EasyTfaManager {
         }
     }
 
-    public void handleCodeRequest(URL url, String browserPubKeyHash, String oneTimePad, String checksum) {
+    public void handleCodeRequest(URL url, String browserPubKeyHash, String oneTimePad, String checksum, String connectionId) {
         VaultEntry entry = getEntryForUrl(url);
         if (entry == null) {
             // TODO: Show entry selection dialog
@@ -142,6 +143,7 @@ public class EasyTfaManager {
         intent.putExtra("browserPubKeyHash", browserPubKeyHash);
         intent.putExtra("oneTimePad", oneTimePad);
         intent.putExtra("checksum", checksum);
+        intent.putExtra("connectionId", connectionId);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // TODO - what does this actually do? (it works though)
         _app.startActivity(intent);
     }

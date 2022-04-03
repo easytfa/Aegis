@@ -10,6 +10,8 @@ import com.beemdevelopment.aegis.encoding.Base64;
 import com.beemdevelopment.aegis.ui.tasks.ProgressDialogTask;
 import com.beemdevelopment.aegis.vault.VaultManagerException;
 
+import org.json.JSONObject;
+
 import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.spec.X509EncodedKeySpec;
@@ -30,7 +32,9 @@ public class LinkBrowserTask extends ProgressDialogTask<LinkBrowserTask.Params, 
         LinkBrowserTask.Params params = args[0];
 
         try {
-            String publicKeyStr = _manager.getApiClient().getPublicKeyForHash(params._hash);
+            JSONObject response = _manager.getApiClient().getPublicKeyForHash(params._hash);
+            String publicKeyStr = response.getString("publicKey");
+            String connectionId = response.getString("connectionId");
 
             if(!_manager.getCrypto().verifyPublicKey(publicKeyStr, params._hash)) {
                 return new Result(new Exception("Public key does not match hash"));
@@ -42,7 +46,7 @@ public class LinkBrowserTask extends ProgressDialogTask<LinkBrowserTask.Params, 
 
             String browserName = "Unknown Browser";
 
-            _manager.getBrowserMessenger().linkBrowser(publicKey, params._hash, params._secret);
+            _manager.getBrowserMessenger().linkBrowser(publicKey, connectionId, params._secret);
             _manager.addLinkedBrowser(browserName, publicKeyStr);
             return new Result(browserName);
         } catch (Exception e) {

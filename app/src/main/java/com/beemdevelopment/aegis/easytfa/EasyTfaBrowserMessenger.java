@@ -29,7 +29,7 @@ public class EasyTfaBrowserMessenger {
         return _crypto.encrypt(browserPublicKey, stringToEncrypt);
     }
 
-    public void linkBrowser(PublicKey publicKey, String hash, String secret) throws JSONException, EasyTfaException {
+    public void linkBrowser(PublicKey publicKey, String connectionId, String secret) throws JSONException, EasyTfaException {
         String encodedLocalPublicKey = _crypto.getEncodedPublicKey();
 
         JSONObject objectToEncrypt = new JSONObject();
@@ -40,10 +40,10 @@ public class EasyTfaBrowserMessenger {
         JSONObject dataObject = new JSONObject();
         dataObject.put("appPublicKey", encodedLocalPublicKey);
 
-        _apiClient.sendMessage(hash, encryptedString, dataObject);
+        _apiClient.sendMessage(connectionId, encryptedString, dataObject);
     }
 
-    public void sendCode(VaultLinkedBrowserEntry entry, String totpUrl, String oneTimePad, String code) {
+    public void sendCode(VaultLinkedBrowserEntry entry, String connectionId, String totpUrl, String oneTimePad, String code) {
         try {
             byte[] codeBytes = code.getBytes(StandardCharsets.UTF_8);
             byte[] oneTimePadBytes = Base64.decode(oneTimePad);
@@ -61,7 +61,7 @@ public class EasyTfaBrowserMessenger {
             browserMessage.put("code", Base64.encode(codeBytes));
             String encryptedMessage = createEncryptedMessage(publicKey, "code", browserMessage);
 
-            _apiClient.sendMessage(entry.getBrowserPublicKeyHash(), encryptedMessage, null);
+            _apiClient.sendMessage(connectionId, encryptedMessage, null);
         } catch (Exception ex) {
             Log.e("EasyTFA", "Could not send code", ex);
         }

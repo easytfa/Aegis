@@ -48,22 +48,21 @@ public class EasyTfaApiClient {
         }
     }
 
-    public String getPublicKeyForHash(String hash) throws EasyTfaException {
+    public JSONObject getPublicKeyForHash(String hash) throws EasyTfaException {
         try {
             JSONObject requestObject = new JSONObject();
             requestObject.put("hash", hash);
-            JSONObject response = apiRequest(Request.Method.POST, "public-key-by-hash", requestObject);
-            return response.getString("publicKey");
+            return apiRequest(Request.Method.POST, "public-key-by-hash", requestObject);
         }
         catch (Exception ex) {
             throw new EasyTfaException(ex);
         }
     }
 
-    public void sendMessage(String browserHash, String encryptedMessage, JSONObject additionalData) throws EasyTfaException {
+    public void sendMessage(String connectionId, String encryptedMessage, JSONObject additionalData) throws EasyTfaException {
         try {
             JSONObject requestObject = new JSONObject();
-            requestObject.put("hash", browserHash);
+            requestObject.put("connectionId", connectionId);
             requestObject.put("message", encryptedMessage);
             if(additionalData != null) {
                 requestObject.put("data", additionalData);
