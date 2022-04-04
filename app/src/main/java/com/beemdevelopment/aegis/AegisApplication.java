@@ -48,7 +48,7 @@ public class AegisApplication extends Application {
     private EasyTfaManager _easyTfaManager;
 
     private static final String CODE_LOCK_STATUS_ID = "lock_status_channel";
-    private static final String EASYTFA_NOTIFICATION_ID = "easytfa_notification_channel";
+    public static final String EASYTFA_NOTIFICATION_CHANNEL_ID = "easytfa_notification_channel";
     private static final String CODE_LOCK_VAULT_ACTION = "lock_vault";
 
     static {
@@ -218,7 +218,7 @@ public class AegisApplication extends Application {
 
             CharSequence easytfaName = getString(R.string.channel_name_easytfa);
             int easytfaImportance = NotificationManager.IMPORTANCE_HIGH;
-            NotificationChannel easytfaChannel = new NotificationChannel(EASYTFA_NOTIFICATION_ID, easytfaName, easytfaImportance);
+            NotificationChannel easytfaChannel = new NotificationChannel(EASYTFA_NOTIFICATION_CHANNEL_ID, easytfaName, easytfaImportance);
             notificationManager.createNotificationChannel(easytfaChannel);
         }
     }

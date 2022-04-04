@@ -1,7 +1,9 @@
 package com.beemdevelopment.aegis.easytfa;
 
+import android.app.NotificationManager;
 import android.content.Intent;
 import android.os.AsyncTask;
+import android.service.notification.StatusBarNotification;
 import android.util.Log;
 
 import com.beemdevelopment.aegis.AegisApplication;
@@ -99,6 +101,18 @@ public class EasyTfaManager {
     //endregion
 
     public void checkForNewRequest() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            NotificationManager notificationManager = _app.getSystemService(NotificationManager.class);
+            StatusBarNotification[] activeNotifications = notificationManager.getActiveNotifications();
+            for (StatusBarNotification notification : activeNotifications) {
+                if(notification.getTag().equals("easytfa")) {
+                    notificationManager.cancel("easytfa", notification.getId());
+                    // Only one notification with this tag will be shown at once
+                    break;
+                }
+            }
+        }
+
         Collection<VaultLinkedBrowserEntry> linkedBrowsers = _app.getVaultManager().getLinkedBrowsers().getValues();
         List<String> linkedBrowserHashes = linkedBrowsers.stream().map(VaultLinkedBrowserEntry::getBrowserPublicKeyHash).collect(Collectors.toList());
 
