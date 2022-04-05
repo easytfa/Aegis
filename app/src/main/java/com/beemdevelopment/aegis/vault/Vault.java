@@ -2,6 +2,7 @@ package com.beemdevelopment.aegis.vault;
 
 import android.util.Log;
 
+import com.beemdevelopment.aegis.easytfa.VaultLinkedBrowserEntry;
 import com.beemdevelopment.aegis.encoding.Base64;
 import com.beemdevelopment.aegis.util.UUIDMap;
 
@@ -19,9 +20,9 @@ import java.security.spec.X509EncodedKeySpec;
 public class Vault {
     private static final int VERSION = 2;
     private UUIDMap<VaultEntry> _entries = new UUIDMap<>();
-    private UUIDMap<VaultLinkedBrowserEntry> _linkedBrowsers = new UUIDMap<>();
+    private UUIDMap<VaultLinkedBrowserEntry> _easyTfaLinkedBrowsers = new UUIDMap<>();
 
-    private KeyPair _browserLinkKeypair = null;
+    private KeyPair _easyTfaKeyPair = null;
 
     public JSONObject toJson() {
         try {
@@ -31,7 +32,7 @@ public class Vault {
             }
 
             JSONArray linkedBrowserArray = new JSONArray();
-            for (VaultLinkedBrowserEntry e : _linkedBrowsers) {
+            for (VaultLinkedBrowserEntry e : _easyTfaLinkedBrowsers) {
                 linkedBrowserArray.put(e.toJson());
             }
 
@@ -39,9 +40,9 @@ public class Vault {
             obj.put("version", VERSION);
             obj.put("entries", array);
             obj.put("linkedBrowsers", linkedBrowserArray);
-            if(_browserLinkKeypair != null) {
-                obj.put("linkPrivateKey", Base64.encode(_browserLinkKeypair.getPrivate().getEncoded()));
-                obj.put("linkPublicKey", Base64.encode(_browserLinkKeypair.getPublic().getEncoded()));
+            if(_easyTfaKeyPair != null) {
+                obj.put("linkPrivateKey", Base64.encode(_easyTfaKeyPair.getPrivate().getEncoded()));
+                obj.put("linkPublicKey", Base64.encode(_easyTfaKeyPair.getPublic().getEncoded()));
             }
             return obj;
         } catch (JSONException e) {
@@ -52,7 +53,7 @@ public class Vault {
     public static Vault fromJson(JSONObject obj) throws VaultException {
         Vault vault = new Vault();
         UUIDMap<VaultEntry> entries = vault.getEntries();
-        UUIDMap<VaultLinkedBrowserEntry> linkedBrowsers = vault.getLinkedBrowsers();
+        UUIDMap<VaultLinkedBrowserEntry> linkedBrowsers = vault.getEasyTfaLinkedBrowsers();
 
         try {
             int ver = obj.getInt("version");
@@ -68,7 +69,7 @@ public class Vault {
                     X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(publicKeyData);
                     PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(publicKeySpec);
                     PrivateKey privateKey = KeyFactory.getInstance("RSA").generatePrivate(privateKeySpec);
-                    vault._browserLinkKeypair = new KeyPair(publicKey, privateKey);
+                    vault._easyTfaKeyPair = new KeyPair(publicKey, privateKey);
                 } catch(Exception ex) {
                     Log.e( "BrowserLink","KeyPair parsing failed");
                 }
@@ -98,15 +99,16 @@ public class Vault {
         return _entries;
     }
 
-    public UUIDMap<VaultLinkedBrowserEntry> getLinkedBrowsers() {
-        return _linkedBrowsers;
+
+    public UUIDMap<VaultLinkedBrowserEntry> getEasyTfaLinkedBrowsers() {
+        return _easyTfaLinkedBrowsers;
     }
 
-    public KeyPair getBrowserLinkKeyPair() {
-        return _browserLinkKeypair;
+    public KeyPair getEasyTfaKeyPair() {
+        return _easyTfaKeyPair;
     }
 
-    public void setBrowserLinkKeyPair(KeyPair keyPair) {
-        _browserLinkKeypair = keyPair;
+    public void setEasyTfaKeyPair(KeyPair keyPair) {
+        _easyTfaKeyPair = keyPair;
     }
 }

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:title="@string/pref_section_easytfa">
+    <PreferenceCategory
+        android:title="@string/pref_cat_easytfa_general"
+        app:iconSpaceReserved="false">
+        <androidx.preference.SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:key="pref_easytfa_enabled"
+            android:title="@string/pref_easytfa_enabled"
+            android:summary="@string/pref_easytfa_enabled_summary"
+            app:iconSpaceReserved="false"/>
+
+        <androidx.preference.SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:key="pref_easytfa_firebase_enabled"
+            android:title="@string/pref_easytfa_firebase_enabled"
+            android:summary="@string/pref_easytfa_firebase_enabled_summary"
+            app:iconSpaceReserved="false"/>
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:title="@string/pref_cat_easytfa_browser"
+        app:iconSpaceReserved="false">
+        <Preference
+            android:key="pref_easytfa_browser_link"
+            android:title="@string/pref_easytfa_browser_link"
+            android:summary="@string/pref_easytfa_browser_link_summary"
+            app:iconSpaceReserved="false"/>
+        <Preference
+            android:key="pref_easytfa_browser_linked"
+            android:title="@string/pref_easytfa_browser_linked"
+            android:summary="@string/pref_easytfa_browser_linked_summary"
+            app:iconSpaceReserved="false"/>
+        <Preference
+            android:key="pref_easytfa_unlink_all_browsers"
+            android:title="@string/pref_easytfa_unlink_all_browsers"
+            android:summary="@string/pref_easytfa_unlink_all_browsers_summary"
+            app:iconSpaceReserved="false"/>
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:title="@string/pref_cat_easytfa_server"
+        app:iconSpaceReserved="false">
+        <EditTextPreference
+            android:defaultValue="https://eu-relay1.easytfa.com/"
+            android:key="pref_easytfa_server_url"
+            android:title="@string/pref_easytfa_server_url"
+            android:summary="@string/pref_easytfa_server_url_summary"
+            app:iconSpaceReserved="false"/>
+
+        <Preference
+            android:key="pref_easytfa_server_test"
+            android:title="@string/pref_easytfa_server_test"
+            android:summary="@string/pref_easytfa_server_test_summary"
+            app:iconSpaceReserved="false"/>
+    </PreferenceCategory>
+</PreferenceScreen>

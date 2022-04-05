@@ -1,13 +1,11 @@
-package com.beemdevelopment.aegis.ui.linked;
+package com.beemdevelopment.aegis.easytfa.ui;
 
 import android.Manifest;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -16,14 +14,12 @@ import com.beemdevelopment.aegis.helpers.PermissionHelper;
 import com.beemdevelopment.aegis.ui.AegisActivity;
 import com.beemdevelopment.aegis.ui.ScannerActivity;
 import com.beemdevelopment.aegis.ui.dialogs.Dialogs;
-import com.beemdevelopment.aegis.ui.tasks.LinkBrowserTask;
-import com.beemdevelopment.aegis.vault.VaultLinkedBrowserEntry;
+import com.beemdevelopment.aegis.easytfa.LinkBrowserTask;
+import com.beemdevelopment.aegis.easytfa.VaultLinkedBrowserEntry;
 import com.beemdevelopment.aegis.vault.VaultManagerException;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
 public class LinkedBrowsersActivity extends AegisActivity {
 
@@ -110,34 +106,14 @@ public class LinkedBrowsersActivity extends AegisActivity {
         String secret = data.getStringExtra("secret");
         String hash = data.getStringExtra("hash");
 
-        LinkBrowserTask task = new LinkBrowserTask(getApp(), this, (LinkBrowserTask.Result result) -> {
-            if(result.isSuccess()) {
-                createNewBrowserLinkEntry(result);
-            } else {
+        LinkBrowserTask task = new LinkBrowserTask(getApp().getEasyTfaManager(), this, (LinkBrowserTask.Result result) -> {
+            if(!result.isSuccess()) {
                 Dialogs.showErrorDialog(this, R.string.linking_browser_error, result.getException());
             }
         });
 
         LinkBrowserTask.Params params = new LinkBrowserTask.Params(secret, hash);
         task.execute(this.getLifecycle(), params);
-    }
-
-    private void createNewBrowserLinkEntry(LinkBrowserTask.Result result) {
-        for (VaultLinkedBrowserEntry linkedBrowser: getApp().getVaultManager().getLinkedBrowsers()) {
-            if(linkedBrowser.getBrowserPublicKey().equals(result.getPubKeyBrowser()))
-                return;
-        }
-
-        VaultLinkedBrowserEntry linkedBrowser = new VaultLinkedBrowserEntry(result.getBrowserName(), result.getPubKeyBrowser());
-        getApp().getVaultManager().getLinkedBrowsers().add(linkedBrowser);
-        try {
-            getApp().getVaultManager().save(true);
-            Toast.makeText(this.getApplicationContext(), "Linked browser", Toast.LENGTH_SHORT).show();
-        }
-        catch(VaultManagerException ex) {
-            Toast.makeText(this.getApplicationContext(), "Could not save vault", Toast.LENGTH_SHORT).show();
-        }
-        updateLinkedBrowserList();
     }
 
     @Override

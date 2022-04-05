@@ -6,6 +6,7 @@ import android.content.Context;
 import androidx.core.util.AtomicFile;
 
 import com.beemdevelopment.aegis.Preferences;
+import com.beemdevelopment.aegis.easytfa.VaultLinkedBrowserEntry;
 import com.beemdevelopment.aegis.otp.GoogleAuthInfo;
 import com.beemdevelopment.aegis.util.IOUtils;
 import com.beemdevelopment.aegis.util.UUIDMap;
@@ -226,19 +227,6 @@ public class VaultManager {
         _androidBackups.dataChanged();
     }
 
-    public KeyPair getBrowserLinkKeypair() {
-        return _vault.getBrowserLinkKeyPair();
-    }
-
-    public void setBrowserLinkKeyPair(KeyPair keyPair) {
-        _vault.setBrowserLinkKeyPair(keyPair);
-    }
-
-    public UUIDMap<VaultLinkedBrowserEntry> getLinkedBrowsers() {
-        return _vault.getLinkedBrowsers();
-    }
-
-
     public void addEntry(VaultEntry entry) {
         _vault.getEntries().add(entry);
     }
@@ -302,5 +290,18 @@ public class VaultManager {
     public void disableEncryption() throws VaultManagerException {
         _creds = null;
         save(true);
+    }
+
+
+    public KeyPair getBrowserLinkKeypair() {
+        return _vault.getEasyTfaKeyPair();
+    }
+
+    public void setBrowserLinkKeyPair(KeyPair keyPair) {
+        _vault.setEasyTfaKeyPair(keyPair);
+    }
+
+    public UUIDMap<VaultLinkedBrowserEntry> getLinkedBrowsers() {
+        return _vault.getEasyTfaLinkedBrowsers();
     }
 }

@@ -19,10 +19,10 @@ import androidx.lifecycle.LifecycleEventObserver;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ProcessLifecycleOwner;
 
+import com.beemdevelopment.aegis.easytfa.EasyTfaManager;
 import com.beemdevelopment.aegis.icons.IconPackManager;
 import com.beemdevelopment.aegis.services.NotificationService;
 import com.beemdevelopment.aegis.ui.MainActivity;
-import com.beemdevelopment.aegis.util.BrowserLinkManager;
 import com.beemdevelopment.aegis.util.IOUtils;
 import com.beemdevelopment.aegis.vault.Vault;
 import com.beemdevelopment.aegis.vault.VaultFile;
@@ -44,9 +44,11 @@ public class AegisApplication extends Application {
     private List<LockListener> _lockListeners;
     private boolean _blockAutoLock;
     private IconPackManager _iconPackManager;
-    private BrowserLinkManager _browserLinkManager;
+
+    private EasyTfaManager _easyTfaManager;
 
     private static final String CODE_LOCK_STATUS_ID = "lock_status_channel";
+    public static final String EASYTFA_NOTIFICATION_CHANNEL_ID = "easytfa_notification_channel";
     private static final String CODE_LOCK_VAULT_ACTION = "lock_vault";
 
     static {
@@ -60,7 +62,7 @@ public class AegisApplication extends Application {
         _prefs = new Preferences(this);
         _lockListeners = new ArrayList<>();
         _iconPackManager = new IconPackManager(this);
-        _browserLinkManager = new BrowserLinkManager(this);
+        _easyTfaManager = new EasyTfaManager(this);
 
         Iconics.init(this);
         Iconics.registerFont(new MaterialDesignIconic());
@@ -85,8 +87,6 @@ public class AegisApplication extends Application {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             initNotificationChannels();
         }
-
-        _browserLinkManager.getFCMToken();
     }
 
     public boolean isVaultLocked() {
@@ -134,8 +134,8 @@ public class AegisApplication extends Application {
         return _manager;
     }
 
-    public BrowserLinkManager getBrowserLinkManager() {
-        return _browserLinkManager;
+    public EasyTfaManager getEasyTfaManager() {
+        return _easyTfaManager;
     }
 
     public IconPackManager getIconPackManager() {
@@ -215,6 +215,11 @@ public class AegisApplication extends Application {
 
             NotificationManager notificationManager = getSystemService(NotificationManager.class);
             notificationManager.createNotificationChannel(channel);
+
+            CharSequence easytfaName = getString(R.string.channel_name_easytfa);
+            int easytfaImportance = NotificationManager.IMPORTANCE_HIGH;
+            NotificationChannel easytfaChannel = new NotificationChannel(EASYTFA_NOTIFICATION_CHANNEL_ID, easytfaName, easytfaImportance);
+            notificationManager.createNotificationChannel(easytfaChannel);
         }
     }
 

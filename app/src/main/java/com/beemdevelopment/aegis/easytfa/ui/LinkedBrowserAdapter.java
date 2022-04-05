@@ -1,4 +1,4 @@
-package com.beemdevelopment.aegis.ui.linked;
+package com.beemdevelopment.aegis.easytfa.ui;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,12 +8,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.beemdevelopment.aegis.R;
-import com.beemdevelopment.aegis.helpers.ItemTouchHelperAdapter;
-import com.beemdevelopment.aegis.ui.views.EntryHolder;
-import com.beemdevelopment.aegis.vault.VaultEntry;
-import com.beemdevelopment.aegis.vault.VaultLinkedBrowserEntry;
+import com.beemdevelopment.aegis.easytfa.VaultLinkedBrowserEntry;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class LinkedBrowserAdapter extends RecyclerView.Adapter<LinkedBrowserEntryHolder> {

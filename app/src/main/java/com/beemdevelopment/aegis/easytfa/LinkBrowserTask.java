@@ -1,34 +1,28 @@
-package com.beemdevelopment.aegis.ui.tasks;
+package com.beemdevelopment.aegis.easytfa;
 
 import android.content.Context;
-import android.os.SystemClock;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.beemdevelopment.aegis.AegisApplication;
 import com.beemdevelopment.aegis.R;
-import com.beemdevelopment.aegis.crypto.CryptoUtils;
-import com.beemdevelopment.aegis.crypto.SCryptParameters;
 import com.beemdevelopment.aegis.encoding.Base64;
-import com.beemdevelopment.aegis.vault.VaultLinkedBrowserEntry;
-import com.beemdevelopment.aegis.vault.slots.PasswordSlot;
+import com.beemdevelopment.aegis.ui.tasks.ProgressDialogTask;
+import com.beemdevelopment.aegis.vault.VaultManagerException;
 
-import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
-
-import javax.crypto.SecretKey;
 
 public class LinkBrowserTask extends ProgressDialogTask<LinkBrowserTask.Params, LinkBrowserTask.Result> {
+    private final EasyTfaManager _manager;
     private Callback _cb;
-    private AegisApplication _app;
 
-    public LinkBrowserTask(AegisApplication app, Context context, Callback cb) {
+    public LinkBrowserTask(EasyTfaManager manager, Context context, Callback cb) {
         super(context, context.getString(R.string.linking_browser));
-        _app = app;
+        _manager = manager;
         _cb = cb;
     }
 
@@ -37,15 +31,12 @@ public class LinkBrowserTask extends ProgressDialogTask<LinkBrowserTask.Params, 
         setPriority();
         LinkBrowserTask.Params params = args[0];
 
-        if(_app.getVaultManager().getBrowserLinkKeypair() == null) {
-            _app.getBrowserLinkManager().generateLocalKeypair();
-            Log.i("BrowserLink", "Keypair null, generating new keypair");
-        }
-
         try {
-            String publicKeyStr = _app.getBrowserLinkManager().requestPublicKeyForHash(params._hash);
+            JSONObject response = _manager.getApiClient().getPublicKeyForHash(params._hash);
+            String publicKeyStr = response.getString("publicKey");
+            String connectionId = response.getString("connectionId");
 
-            if(!_app.getBrowserLinkManager().verifyPublicKey(publicKeyStr, params._hash)) {
+            if(!_manager.getCrypto().verifyPublicKey(publicKeyStr, params._hash)) {
                 return new Result(new Exception("Public key does not match hash"));
             }
 
@@ -53,13 +44,15 @@ public class LinkBrowserTask extends ProgressDialogTask<LinkBrowserTask.Params, 
             X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(publicKeyData);
             PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(publicKeySpec);
 
-            _app.getBrowserLinkManager().linkBrowser(publicKey, params._hash, params._secret);
-            return new Result(publicKeyStr, "Chrome Something");
+            String browserName = "Unknown Browser";
+
+            _manager.getBrowserMessenger().linkBrowser(publicKey, connectionId, params._secret);
+            _manager.addLinkedBrowser(browserName, publicKeyStr);
+            return new Result(browserName);
         } catch (Exception e) {
             e.printStackTrace();
             return new Result(e);
         }
-
 
     }
 
@@ -89,13 +82,11 @@ public class LinkBrowserTask extends ProgressDialogTask<LinkBrowserTask.Params, 
 
     public static class Result {
         private Boolean _success;
-        private String _pubKeyBrowser;
         private String _browserName;
         private Exception _exception;
 
-        public Result(String pubKeyBrowser, String browserName) {
+        public Result(String browserName) {
             _success = true;
-            _pubKeyBrowser = pubKeyBrowser;
             _browserName = browserName;
         }
 
@@ -114,10 +105,6 @@ public class LinkBrowserTask extends ProgressDialogTask<LinkBrowserTask.Params, 
 
         public Exception getException() {
             return _exception;
-        }
-
-        public String getPubKeyBrowser() {
-            return _pubKeyBrowser;
         }
     }
 

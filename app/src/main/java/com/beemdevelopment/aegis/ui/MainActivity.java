@@ -38,7 +38,7 @@ import com.beemdevelopment.aegis.otp.GoogleAuthInfoException;
 import com.beemdevelopment.aegis.ui.dialogs.Dialogs;
 import com.beemdevelopment.aegis.ui.fragments.BackupsPreferencesFragment;
 import com.beemdevelopment.aegis.ui.fragments.PreferencesFragment;
-import com.beemdevelopment.aegis.ui.linked.LinkedBrowsersActivity;
+import com.beemdevelopment.aegis.easytfa.ui.LinkedBrowsersActivity;
 import com.beemdevelopment.aegis.ui.views.EntryListView;
 import com.beemdevelopment.aegis.vault.VaultEntry;
 import com.beemdevelopment.aegis.vault.VaultFile;
@@ -171,7 +171,7 @@ public class MainActivity extends AegisActivity implements EntryListView.Listene
             @Override
             public void onReceive(Context context, Intent intent) {
                 if(intent.getAction().equals(NOTIFY_ACTIVITY_CHECK_REQUESTS)) {
-                    AsyncTask.execute(() -> getApp().getBrowserLinkManager().checkForNewRequest());
+                    AsyncTask.execute(() -> getApp().getEasyTfaManager().initialize());
                 }
             }
         };
@@ -546,13 +546,11 @@ public class MainActivity extends AegisActivity implements EntryListView.Listene
 
             // refresh all codes to prevent showing old ones
             _entryListView.refresh(false);
-            AsyncTask.execute(() -> getApp().getBrowserLinkManager().checkForNewRequest());
-            AsyncTask.execute(() -> getApp().getBrowserLinkManager().registerFCMStuff());
+            AsyncTask.execute(() -> getApp().getEasyTfaManager().initialize());
         } else {
             loadEntries();
             checkTimeSyncSetting();
-            AsyncTask.execute(() -> getApp().getBrowserLinkManager().checkForNewRequest());
-            AsyncTask.execute(() -> getApp().getBrowserLinkManager().registerFCMStuff());
+            AsyncTask.execute(() -> getApp().getEasyTfaManager().initialize());
         }
 
         handleDeeplink();
@@ -646,12 +644,8 @@ public class MainActivity extends AegisActivity implements EntryListView.Listene
                 startPreferencesActivity();
                 return true;
             }
-            case R.id.action_linked_browsers: {
-                startLinkedBrowsersActivity();
-                return true;
-            }
             case R.id.action_refresh_linked_browsers: {
-                AsyncTask.execute(() -> getApp().getBrowserLinkManager().checkForNewRequest());
+                AsyncTask.execute(() -> getApp().getEasyTfaManager().checkForNewRequest());
                 return true;
             }
             case R.id.action_about: {

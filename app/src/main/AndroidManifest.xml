@@ -91,10 +91,10 @@
             android:name=".ui.PreferencesActivity"
             android:label="@string/title_activity_preferences" />
         <activity
-            android:name=".ui.linked.LinkedBrowsersActivity"
+            android:name=".easytfa.ui.LinkedBrowsersActivity"
             android:label="@string/title_activity_linked_browsers" />
         <activity
-            android:name=".ui.linked.LinkedBrowserApproveRequestActivity"
+            android:name=".easytfa.ui.LinkedBrowserApproveRequestActivity"
             android:label="@string/title_activity_linked_approve" />
 
         <activity
